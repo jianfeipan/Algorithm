@@ -70,7 +70,7 @@ public:
         using Stops=int;
         using Cost = int;
         using Node=int;
-        vector<Cost> minCostFromSrc(n, INT_MAX);
+        vector<Cost> minCostFromSrc(n, INT_MAX); // this data structure helps to find the current smallest price to decide if we take that node and get a smaller price, then we update this table
         minCostFromSrc[src] = 0;
         // grah: adj table or hash map
         vector<vector<pair<Node, Cost>>> flight_cost(n); // -1 is unreachable
