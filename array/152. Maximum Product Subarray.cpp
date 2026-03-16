@@ -35,7 +35,7 @@ idea1: segements!
 
     If the count of negative numbers is even, the product of the whole segment is positive → usually the best.
     If the count is odd, we must drop either the prefix up to the first negative or the suffix after the last negative to make the remaining product have an even number of negatives.
-idea2 two pass!
+idea2 two pass! accumulation!
     in a no zero segementation, the max is produced during we loop to left to right or from right to left
 
 */
@@ -44,7 +44,7 @@ public:
     int maxProduct(vector<int>& nums) {
         int maxProduct = nums[0];
 
-        int leftProduct = 1;
+        int leftProduct = 1; //-> this is very smart to manage the 0 values.
         for(int i=0; i<nums.size(); ++i){
             if(leftProduct==0){// when we have zero, we reset the accumulated product to 1
                 leftProduct=1;
