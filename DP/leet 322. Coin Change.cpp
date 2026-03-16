@@ -59,16 +59,17 @@ idea:
 class Solution {
 private:
     unordered_map<int, int> minCoinForAmount;
-public:
-    int coinChange(vector<int>& coins, int amount) {// [2] 3 | 1
+
+    int _coinChange(vector<int>& coins, int amount, int from) {// [2] 3 | 1
         if(amount==0) return 0;
         if(amount<0) return -1;
         if(minCoinForAmount.count(amount)){
             return minCoinForAmount[amount];
         }
         int minCoin = INT_MAX;
-        for(const auto& coin : coins){
-            const auto rest = coinChange(coins, amount - coin);
+        for(int i=from; i<coins.size(); ++i){
+            if(coins[i] > amount) break;
+            const auto rest = coinChange(coins, amount - coins[i]);
             if(rest!=-1){
                 minCoin = min(minCoin, rest+1);
             }
@@ -76,7 +77,12 @@ public:
         minCoinForAmount[amount] = (minCoin==INT_MAX ? -1 : minCoin);
         return minCoinForAmount[amount];
     }
+public:
+    int coinChange(vector<int>& coins, int amount){
+        return _coinChange(coins, amount, 0);
+    }
 };
+
 
     
 class Solution_greedy{
