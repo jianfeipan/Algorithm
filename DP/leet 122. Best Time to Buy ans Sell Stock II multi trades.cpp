@@ -56,3 +56,22 @@ public:
         return max(sell[n-1], wait[n-1]);
     }
 };
+
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        const auto n = prices.size();
+        int hold_stock = -prices[0];
+        int hold_cash = 0;
+
+        for(int i=1; i<n; ++i){
+            hold_stock = max(hold_stock, hold_cash - prices[i]); 
+            // hold_stock can from hold_stock or buy stock from hold cash
+            hold_cash = max(hold_cash, hold_stock + prices[i]); 
+            // hold_cash can from continue hold_cash, or sell the hold_stock
+        }
+
+        return hold_cash;// finaly we can only hold_cash
+    }
+};
+
