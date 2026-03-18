@@ -74,6 +74,7 @@ private:
         
         here 
         */
+        
         vector<vector<int>> maxProfits(3, vector<int>(prices.size() + 1, 0));
         for(int tradeNb = 1; tradeNb<3;++tradeNb)
         {
@@ -92,8 +93,41 @@ private:
         }
         return  maxProfits[2][prices.size()];
     }
+
+    int maxProfit_DP_bottom_up(const vector<int>& prices) {
+        const auto n = prices.size();
+
+        vector<int> firstBuy(n);
+        vector<int> firstSell(n);
+        vector<int> firstHold(n);
+        vector<int> secondBuy(n);
+        vector<int> secondSell(n);
+        vector<int> secondHold(n);
+        vector<int> wait(n);
+
+        firstBuy[0] = -pirce[0];
+        firstSell[0] = firstHold[0] = secondBuy[0] = secondHold[0] = secondSell[0] = INT_MIN;
+        wait[0] = 0;
+        
+        for(int i=0; i<n, ++i){
+            firstBuy[i] = wait[i-1] - parices[i];
+            firstHold[i] = max(firstBuy[i-1], firstHold[i-1]);
+            firstSell[i] = max(firstBuy[i-1], firstHold[i-1])+prices[i];
+            secondBuy[i] = max(wait[i-1], firstSell[i-1]) - prices[i];
+            secondHold[i]= max(secondBuy[i-1], secondHold[i-1]);
+            secondSell[i] = max(secondBuy[i-1], secondHold[i-1]);
+            wait[i] = max(wait[i-1], fristSell[i-1], secondSell[i-1]);
+        }
+
+        return max(max(secondSell[n-1], firstSell[n-1]), wait[n-1]);
+
+    
+    }
     
     
+};
+
+class Solution_from_one_buy_obe_sell{
     int maxProfit_brute_force_leftMax_rightMax(vector<int>& prices) 
     {
         /*
