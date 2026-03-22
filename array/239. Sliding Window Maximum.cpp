@@ -24,7 +24,7 @@ Constraints:
 1 <= k <= nums.length
 */
 
-class Solution {
+class Solution_multiset {
 /*
 ideas:
 [1  3  -1] -3  5  3  6  7       3
@@ -49,5 +49,44 @@ public:
             windowMax.push_back(*ordered.rbegin());
         }
         return windowMax;
+    }
+};
+
+
+// O(N) is possible with monotonic deque:
+
+#include <vector>
+#include <deque>
+
+using namespace std;
+
+class Solution {
+public:
+    vector<int> maxSlidingWindow(vector<int>& nums, int k) {
+        vector<int> result;
+        deque<int> dq; // Stores indices, keep max index in front
+
+        for (int i = 0; i < nums.size(); ++i) {
+            // 1. Remove indices of elements smaller than the current element
+            // because they will never be the maximum in any future window.
+            while (!dq.empty() && nums[dq.back()] < nums[i]) {
+                dq.pop_back();
+            }
+            
+            dq.push_back(i);
+
+            // 2. Remove the front index if it has fallen out of the window
+            if (dq.front() == i - k) {
+                dq.pop_front();
+            }
+
+            // 3. The front of the deque is the maximum for the current window
+            // (Only start adding to results once we've reached the first full window)
+            if (i >= k - 1) {
+                result.push_back(nums[dq.front()]);
+            }
+        }
+
+        return result;
     }
 };
