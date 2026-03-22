@@ -18,29 +18,37 @@ Then buy on day 7 (price = 1) and sell on day 8 (price = 4), profit = 4-1 = 3.
 idea : what we should find is two pairs or one pair to have biggest profit, and two pairs cannot have overlapping
     */
     
-Class Solution {
+class Solution {
 private:
     int DP_bottom_up(const vector<int>& prices) {
         if(prices.empty()) return 0;
 
         const auto n = prices.size();
-        int buy1    = INT_MAX;
-        int profit1 = INT_MIN;
-        int buy2    = INT_MAX;
-        int profit2 = INT_MIN;
+        int buy1    = INT_MIN;
+        int sell1 = INT_MIN;
+        int buy2    = INT_MIN;
+        int sell2 = INT_MIN;
 
-        for(int i=1; i<n; ++i){
-            buy1    = min(buy1, prices[i]); // minimum the cost
-            profit1 = max(profit1, prices[i] - buy1); // maximum the profit
+        for(int i=0; i<n; ++i){
+            buy1    = max(buy1, -prices[i]); // minimum the cost
+            sell1 = max(sell1, prices[i] + buy1); // maximum the profit
 
-            buy2    = min(buy2, prices[i] - profit1); 
+            buy2    = max(buy2, -prices[i] + sell1); 
             // if you do the second buy here, the min total cost is the price and the max profit from the first buy=sell 
-            profit2 = max(profit2, prices[i] - buy2);
+            sell2 = max(sell2, prices[i] + buy2);
             // if you sell here, the max profit is the current price - the total cost which is the buy2, and the first transaction is embaded in the buy2 info)
         }
 
-        return profit2; // no need to check profit1: it's the same you do first transaction on the same date.
+        return sell2; // no need to check profit1: it's the same you do first transaction on the same date.
     } 
+
+
+
+public:
+    int maxProfit(vector<int>& prices) {
+        return DP_bottom_up(prices);
+    }
+};
 
 
 
