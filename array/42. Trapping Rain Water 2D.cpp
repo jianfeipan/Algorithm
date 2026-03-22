@@ -25,40 +25,31 @@ n == height.length
 
 */
 class Solution {
+
+/*
+[0,1,0,2,1,0,1,3,2,1,2,1]
+every high, water be trapped is the min(leftMax, rightMax)
+to find left max: one pass with a vector noted
+        right max: one pass
+then we sum the min(leftMax, rightMax)
+*/
 public:
     int trap(vector<int>& height) {
-
-        //Let's only count to the right:
-        // For index middle, the water traped is: 
-        // max(min(leftMax, rightMax) - height[middle], 0)
-        // where: left < middle < right
-        // leftMax = max{height[left]}
-        // rightMax = max{height[right]}
-        
-        //BF: O(n^2)
-        //usng a vector to note current max, 
-        // loop from left to right, then another verctor from right to left.
-
-        vector<int> leftMax(height.size(), 0);
-        int current_left_max = height[0];
-        for(int i = 1; i< leftMax.size(); ++i){
-            leftMax[i] = current_left_max;
-            current_left_max = max(current_left_max, height[i]);
+        if(height.size()<=2) return 0;
+        vector<int> leftMax=height;
+        for(int i=1; i<leftMax.size(); ++i){
+            leftMax[i] = max(leftMax[i], leftMax[i-1]);
         }
-        
-        vector<int> rightMax(height.size(), 0);
-        int current_right_max = height[height.size()-1];
-        for(int i = height.size()-2; i>=0; --i){
-            rightMax[i] = current_right_max;
-            current_right_max = max(current_right_max, height[i]);
+        vector<int> rightMax=height;
+        for(int i=rightMax.size()-2; i>=0; --i){
+            rightMax[i] = max(rightMax[i], rightMax[i+1]);
         }
 
-        int water = 0 ;
-        for(int middle = 1; middle < height.size()-1; ++middle){
-            const int hight_min = min(leftMax[middle], rightMax[middle]);
-            water+=max( hight_min - height[middle], 0);
+        int sum=0;
+        for(int i=1; i<=height.size()-2; ++i){
+            auto maxHight = min(leftMax[i], rightMax[i]);
+            sum+=max(maxHight - height[i], 0);
         }
-
-        return water;
+        return sum;
     }
 };
