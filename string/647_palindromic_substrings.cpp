@@ -1,58 +1,63 @@
-/*Palindromic Substrings
+/*
+Given a string s, return the number of palindromic substrings in it.
 
-Given a string s, return the number of substrings within s that are palindromes.
+A string is a palindrome when it reads the same backward as forward.
 
-A palindrome is a string that reads the same forward and backward.
+A substring is a contiguous sequence of characters within the string.
+
+ 
 
 Example 1:
 
 Input: s = "abc"
-
 Output: 3
-Explanation: "a", "b", "c".
-
+Explanation: Three palindromic strings: "a", "b", "c".
 Example 2:
 
 Input: s = "aaa"
-
 Output: 6
-Explanation: "a", "a", "a", "aa", "aa", "aaa". Note that different substrings are counted as different palindromes even if the string contents are the same.
+Explanation: Six palindromic strings: "a", "a", "a", "aa", "aa", "aaa".
+ 
 
 Constraints:
 
 1 <= s.length <= 1000
-s consists of lowercase English letters.*/
-
-/*
-idea: 
-    from each letter, we go extend to left and right, make sure it's same and extend
-    every extend is a new substring with palindrome
-    from two same letters, do the same
-
-    O(n^2)
+s consists of lowercase English letters.
 */
 
+
+/*
+idea:
+    BF: look at all substrings O(N^3) check palindromic
+
+    palindromic-> every letter extends to left and right: O(n^2)
+                or every two letters extend
+
+*/
 class Solution {
 public:
     int countSubstrings(string s) {
         int count = 0;
-        auto extend = [&s, &count](int l, int r){
-            while(l>=0 && r<s.size()){
-                if(s[l]==s[r]){
+        // extend from one letter
+        for(int i=0; i<s.size(); ++i){
+            int l=i;
+            int r=i;
+            while(l>=0 && r<s.size() && s[l] == s[r]){
                     ++count;
-                }else{
-                    break;
-                }
+                    --l;
+                    ++r;
+            }
+        }
+
+        //extend from two letters
+        for(int i=0; i<s.size()-1; ++i){
+            int l=i;
+            int r=i+1;
+            while(l>=0 && r<s.size() && s[l] == s[r]){
+                ++count;
                 --l;
                 ++r;
             }
-        };
-
-        for(int i=0; i<s.size(); ++i){
-            // start from one letter
-            extend(i,i);
-            // start from two letters
-            extend(i,i+1);
         }
 
         return count;
