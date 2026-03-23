@@ -54,6 +54,8 @@ public:
             for(const auto& direction : DIRECTIONS){
                 int newR = r;
                 int newC = c;
+                // this rolling logic is different from the traditional maze: 
+                // we need to go on that direction, until 1 or boundry
                 bool moved=false;
                 while( newR>=0 && newR<R
                     && newC>=0 && newC<C
