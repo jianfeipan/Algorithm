@@ -1,70 +1,83 @@
+/*
+Given an array of integers nums and an integer k, return the total number of subarrays whose sum equals to k.
+
+A subarray is a contiguous non-empty sequence of elements within an array.
+
+Example 1:
+
+Input: nums = [1,1,1], k = 2
+Output: 2
+Example 2:
+
+Input: nums = [1,2,3], k = 3
+Output: 2
+*/
+
 class Solution {
 public:
-    int subarraySum(vector<int>& nums, int k) 
-    {
-        return subarraySum_cumulated_sum_map(nums, k);
+    int subarraySum_BF(vector<int>& nums, int k) {
+        /*
+            BF: check all subarrays: N+N-1+N-1 .. O(N^2), each subarray sum N : O(N^3)
+            i j
+            [1,2,3]
+            there are negative values! shouldn't stop when sum is > k
+        */
+        int counter = 0;
+        for(int l=0; l<nums.size(); ++l){
+            for(int r=l; r<nums.size(); ++r){
+                int sum=0;
+                for(int i=l; i<=r; ++i) sum+=nums[i];
+                if(sum == k) ++counter;
+            }
+        }
+        return counter;
     }
-    
-private:
-    int subarraySum_cumulated_sum_map(vector<int>& nums, int k)//O(N)
-    {
-        int count = 0; 
+    // using a leftSum to reduce sum loop: O(N^2): any range of sum is leftSum1 - leftSum2
+    // [1, 2 , 3] -> [0, 1, 3, 6]
+    int subarraySum_leftSum(vector<int>& nums, int k){
+        vector<int> leftSum = {0};
+        for(int i=0; i<nums.size(); ++i){
+            leftSum.push_back(nums[i]+*leftSum.rbegin());
+        }
 
-        map<int,int> leftCumulatedSumCount; // left cumulated sum -> count
-        /*
-        ( cumulated sum ) - (another left cumulated sum) = target --> we have on sub set
-        */
-        leftCumulatedSumCount[0]++; // empty = 0 can be first cumulated sum
-        
-        int currentCumulatedSum = 0;
-        for(int i=0;i<nums.size();i++)
-        {
-            currentCumulatedSum += nums[i];
-            
-            if(leftCumulatedSumCount.count(currentCumulatedSum - k))//trye to find a already cumulated sum who matches ( cumulated sum ) - (another left cumulated sum) = target
-                count += leftCumulatedSumCount[currentCumulatedSum-k];
-            
-            leftCumulatedSumCount[currentCumulatedSum]++;
-        }
-        return count;
-    }
-    
-    int subarraySum_brute_force_smart_on_sum_compute(const vector<int>& nums, int k) 
-    {
-         /*
-        idea: the sum could be intergrated in the second loop : O(N^2)
-        */
-        int count = 0;
-        for(size_t from = 0; from<nums.size(); ++from)
-        {
-            int sum = 0;//sum in second loop to avoid have anohter loop
-            for(size_t to = from; to<nums.size(); ++to)
-            {
-                sum += nums[to];
-                if(sum == k) ++count;
+        int counter=0;
+        for(int l=0; l<nums.size(); ++l){
+            for(int r=l; r<nums.size(); ++r){
+                if(leftSum[r+1] - leftSum[l] == k) ++counter;
             }
         }
-        return count;
+
+        return counter;
     }
     
+
+    /*
+    following the previous idea with leftSum, 
+    basically we are looking for leftSum2 - leftSum1 = k
     
-    int subarraySum_brute_force(const vector<int>& nums, int k) 
-    {
-        /*
-        idea: all posible O(N^3)
-        */
+    so when we compute leftSum, we can have a map to memorise leftSum and the frequency of the sum
+    then for each leftSum, we look in the current map if leftSum - k is already in the map, so we increment the counter
+    
+    
+    */
+    int subarraySum(vector<int>& nums, int k){
+        unordered_map<int, int> sumFrequency; // this sum has how many substrings
+        sumFrequency[0] = 1; // this is the base: for sum of zero, we have one solution
+
+        int leftSum = 0;
         int count = 0;
-        for(size_t from = 0; from<nums.size(); ++from)
-        {
-            for(size_t to = from; to<nums.size(); ++to)
-            {
-                int sum = 0;
-                for(size_t i = from; i<= to; ++i)
-                    sum += nums[i];
-                
-                if(sum == k) ++count;
+        for(const auto& num : nums){
+            leftSum += num;
+
+            auto sum2 = leftSum - k;
+            if(sumFrequency.count(sum2)){
+                count+= sumFrequency[sum2];
             }
+
+            ++sumFrequency[leftSum];
         }
+
         return count;
     }
+
 };
