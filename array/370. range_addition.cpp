@@ -70,8 +70,8 @@ public:
                 res[left-1] -= val;
             }
         }
-        // we do accumulate from left, piece-wise the jumps
-        for(int i=1; i<res.size(); ++i) res[i]+=res[i-1];
+        // we do accumulate from right, piece-wise the jumps
+        for(int i=res.size()-2; i>=0; --i) res[i]+=res[i+1];
         
         return res;
     }
