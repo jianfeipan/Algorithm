@@ -1,29 +1,4 @@
 /*
-
-Topics
-premium lock icon
-Companies
-Given an array nums of distinct integers, return all the possible permutations. You can return the answer in any order.
-
- 
-
-Example 1:
-
-Input: nums = [1,2,3]
-Output: [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
-Example 2:
-
-Input: nums = [0,1]
-Output: [[0,1],[1,0]]
-Example 3:
-
-Input: nums = [1]
-Output: [[1]]
-
-*/
-
-/*
-
 nums = [1,2,3]
 
 
@@ -31,7 +6,7 @@ permute                      [1]
 permute             [1,2],               [2,1] -> add 2 to all possible positions of permut [1] 
 permut2 [1,2,3]  [312]  [132]      [321] [231] [213] -> add 3 to all possible positions of permute [1,2]
 */
-class Solution_insertion { // inserting thinking
+class Solution_insertion { // inserting thinking O(N*N!)
 private:
 
     vector<vector<int>> permute(const vector<int>& nums, int from){
@@ -57,14 +32,13 @@ public:
     }
 };
 /*
-
-
 swap thinking: 
 every element to be in any position: 
 the element at start, to be in any other places [start, n-1]
 every possible value, we combine it with swaps on start+1. (this value to be on start, is already covered by start sawp). 
 backtrace, to next 
 
+O(N*N!) permutation N! each one we copy the vector O(N)
 */
 class Solution{
 private:
