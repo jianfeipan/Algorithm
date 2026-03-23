@@ -1,100 +1,90 @@
-class Solution0
-{
 /*
-the first element have N place to go, second have N-1...
-all branches reaches the end: we put all numbers, and we add this to the result
-recursive?
-*/
-private:   
-void _permute(const vector<int>& nums, 
-                vector<vector<int>>& res, 
-                vector<bool>& used, 
-                vector<int> & current)
-{
-    if(current.size() == nums.size())
-    {
-        res.push_back(current);
-        return;
-    }
 
-    for(int i = 0; i<nums.size();++i){
-        if(!used[i]){
-            used[i] = true;
-            current.push_back(nums[i]);
-            _permute(nums, res, used, current);
-            current.pop_back();
-            used[i] = false;
-        }
-    }
-} 
+Topics
+premium lock icon
+Companies
+Given an array nums of distinct integers, return all the possible permutations. You can return the answer in any order.
 
-public:
-    vector<vector<int>> permute(vector<int>& nums) 
-    {
-        vector<vector<int>> res;
-        vector<int> current;
-        vector<bool> used(nums.size(), false);
-        _permute(nums, res, used, current);
-        return res;
-    }
-};
+ 
 
-//iterative way
-class Solution_iterative
-{
-/*
-iterating on the existed res and insert he current element to all possible slots
+Example 1:
+
+Input: nums = [1,2,3]
+Output: [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
+Example 2:
+
+Input: nums = [0,1]
+Output: [[0,1],[1,0]]
+Example 3:
+
+Input: nums = [1]
+Output: [[1]]
+
 */
 
-public:
-    vector<vector<int>> permute(vector<int>& nums) 
-    {
-        vector<vector<int>> res={{}};
-        for(int num:nums){
-            vector<vector<int>> new_perms;
-            for(const auto& p : res){
-                for(int i=0; i<=p.size(); ++i){
-                    vector<int> copy = p;
-                    copy.insert(copy.begin() + i, num);
-                    new_perms.push_back(copy);
-                }
+/*
 
-            }
-            swap(res, new_perms);
-        }
+nums = [1,2,3]
 
 
-        return res;
-    }
-};
-
-
-//swap
-// 1 can swap with any of N-1
-// 2 can swap with any of N-2...
-class Solution
-{
+permute                      [1] 
+permute             [1,2],               [2,1] -> add 2 to all possible positions of permut [1] 
+permut2 [1,2,3]  [312]  [132]      [321] [231] [213] -> add 3 to all possible positions of permute [1,2]
+*/
+class Solution_insertion { // inserting thinking
 private:
-    void _permute(vector<int>& nums, vector<vector<int>>& res, int from) 
-    {
-        if(from == nums.size()){
-            res.push_back(nums);
+
+    vector<vector<int>> permute(const vector<int>& nums, int from){
+        if(from == nums.size()-1) return {{nums[from]}};
+
+        auto permutes = permute(nums, from+1);
+        const auto& curr = nums[from];
+
+        vector<vector<int>> newPermutes;
+        for(auto& permute : permutes){
+            for(int i=0; i<=permute.size(); ++i){
+                vector<int> newPermute = permute;
+                newPermute.insert(newPermute.begin()+i, curr);
+                newPermutes.emplace_back(move(newPermute));
+            }
+        }
+        
+        return newPermutes;
+    }
+public:
+    vector<vector<int>> permute(vector<int>& nums) {
+        return permute(nums, 0);
+    }
+};
+/*
+
+
+swap thinking: 
+every element to be in any position: 
+the element at start, to be in any other places [start, n-1]
+every possible value, we combine it with swaps on start+1. (this value to be on start, is already covered by start sawp). 
+backtrace, to next 
+
+*/
+class Solution{
+private:
+    void backtrack(vector<int>& nums, int start, vector<vector<int>>& result) {
+        if (start == nums.size()) {
+            result.push_back(nums);
             return;
         }
 
-        for(int i = from; i<nums.size(); ++i){
-            swap(nums[from], nums[i]);
-            _permute(nums, res, from+1);
-            swap(nums[from], nums[i]);
+        for (int i = start; i < nums.size(); ++i) {
+            std::swap(nums[start], nums[i]);      // Swap to fix one element
+            backtrack(nums, start + 1, result);  // Recurse for the rest
+            std::swap(nums[start], nums[i]);      // Backtrack (swap back)
         }
     }
 
 public:
-    vector<vector<int>> permute(vector<int>& nums) 
-    {
-        vector<vector<int>> res;
-        _permute(nums, res, 0);
-        return res;
+    vector<vector<int>> permute(vector<int>& nums) {
+        vector<vector<int>> result;
+        backtrack(nums, 0, result);
+        return result;
     }
 };
-
