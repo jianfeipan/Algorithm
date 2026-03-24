@@ -1,75 +1,69 @@
 /*
-You are given an integer array coins representing coins of different denominations and an integer amount representing a total amount of money.
+You are given an integer array coins representing coins of different denominations (e.g. 1 dollar, 5 dollars, etc) and an integer amount representing a target amount of money.
 
-Return the number of combinations that make up that amount. If that amount of money cannot be made up by any combination of the coins, return 0.
+Return the number of distinct combinations that total up to amount. If it's impossible to make up the amount, return 0.
 
-You may assume that you have an infinite number of each kind of coin.
+You may assume that you have an unlimited number of each coin and that each value in coins is unique.
 
-The answer is guaranteed to fit into a signed 32-bit integer.
 Example 1:
 
-Input: amount = 5, coins = [1,2,5]
+Input: amount = 4, coins = [1,2,3]
+
 Output: 4
-Explanation: there are four ways to make up the amount:
-5=5
-5=2+2+1
-5=2+1+1+1
-5=1+1+1+1+1
+Explanation:
+
+1+1+1+1 = 4
+1+1+2 = 4
+2+2 = 4
+1+3 = 4
 Example 2:
 
-Input: amount = 3, coins = [2]
+Input: amount = 7, coins = [2,4]
+
 Output: 0
-Explanation: the amount of 3 cannot be made up just with coins of 2.
-Example 3:
-
-Input: amount = 10, coins = [10]
-Output: 1
- 
-
 Constraints:
 
-1 <= coins.length <= 300
+1 <= coins.length <= 100
 1 <= coins[i] <= 5000
-All the values of coins are unique.
 0 <= amount <= 5000
 */
 
-
 /*
-idea:
-    dedupliction is the main task: [1,2,5] -> 5
-    2,1 and 1,2 are the same!
+ideas: amount = 4, coins = [1,2,3]
+   take 1 [1] 3[2, 3] ->1
+   take 2 [1] 2[2, 3]->1
+   take 3 [1] 1[2 ,3]->0
+   take 4 [1] ->1 
     
+    DP recursive: topdown sue 1, .... [1] solutions for f(rest, [2...)
 
 */
-
 class Solution {
-public:
-    int change(int amount, vector<int>& coins) 
-    {
-        vector<vector<int>> memory(amount+1, vector<int>(coins.size(),-1));
-        return change(amount, 0, coins, memory);
-    }
-    
 private:
-    int change(int amount, int from, const vector<int>& coins, vector<vector<int>> & memory) 
-    {
+    int changeFrom(int amount, int from, 
+                const vector<int>& coins, 
+                unordered_map<int, int>& memory){
         if(amount == 0) return 1;
-        
-        if(amount<0 || from>=coins.size()) return 0;
-        
-        auto & cache = memory[amount][from];
-        if(cache!=-1) return cache;
-        
-        int count = 0;
-        
-        for(int i = from; i<coins.size(); ++i) // this from is the essential thing to the deduplication:from now on, I don't use any coin before from
-        {
-            count += change(amount - coins[i], i, coins, memory);
+        if(from == coins.size()) return 0;
+
+        const auto key = 100*amount+from; // coins size is <=100 :  from is [0,99]
+        if(memory.count(key)) return memory[key];
+
+        int solutions = 0; 
+
+        const auto& currentCoin = coins[from];
+        int restAmount = amount;
+        while(restAmount >= 0){
+            solutions += changeFrom(restAmount, from+1, coins, memory);
+            restAmount -= currentCoin;
         }
-        
-        cache = count;
-        return count;
-    
+
+        return memory[key] = solutions;
+    }
+public:
+    int change(int amount, vector<int>& coins) {
+        unordered_map<int, int> memory;
+        return changeFrom(amount, 0, coins, memory);
+
     }
 };
