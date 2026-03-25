@@ -1,80 +1,97 @@
+/*
+Interleaving String
+Medium
+Topics
+Company Tags
+Hints
+You are given three strings s1, s2, and s3. Return true if s3 is formed by interleaving s1 and s2 together or false otherwise.
+
+Interleaving two strings s and t is done by dividing s and t into n and m substrings respectively, where the following conditions are met
+
+|n - m| <= 1, i.e. the difference between the number of substrings of s and t is at most 1.
+s = s1 + s2 + ... + sn
+t = t1 + t2 + ... + tm
+Interleaving s and t is s1 + t1 + s2 + t2 + ... or t1 + s1 + t2 + s2 + ...
+You may assume that s1, s2 and s3 consist of lowercase English letters.
+
+Example 1:
+Input: s1 = "aaaa", s2 = "bbbb", s3 = "aabbbbaa"
+
+Output: true
+Explanation: We can split s1 into ["aa", "aa"], s2 can remain as "bbbb" and s3 is formed by interleaving ["aa", "aa"] and "bbbb".
+
+Example 2:
+
+Input: s1 = "", s2 = "", s3 = ""
+
+Output: true
+Example 3:
+
+Input: s1 = "abc", s2 = "xyz", s3 = "abxzcy"
+
+Output: false
+Explanation: We can't split s3 into ["ab", "xz", "cy"] as the order of characters is not maintained.
+*/
+
+
+/*
+
+ideas: 
+    s, t, s, t or t, s, t, s
+
+    put two pointers on s1, s2, compare s3 to the s1 and s2, match the first substring from s1 or s2
+    then recursive
+    if more choince: anyof the recursion returns true is true
+*/
 class Solution {
-public:
-    bool isInterleave(string s1, string s2, string s3) 
-    {
-        if(s1.size() + s2.size() != s3.size()) return false;
+private:
+    bool dfs(const string& s1, const string& s2, const string& s3,
+            int i1, int i2, int i3, vector<vector<int>>& memory){
+
+        cout<< i1 << " - " << i2<< " - "<<i3<<endl;
+        /*
+          i
+        aaaa
+            i
+        bbbb
+              i
+        aabbbbaa
         
-        memory = vector<vector<int>>(s1.size() +1, vector<int>(s2.size()+1, -1));
-        //return isInterleave_recusive_with_memory(s1, s2, s3);
-        return isInterleave_recusive_tabulation(s1, s2, s3);
-    }
-    
-    bool isInterleave_recusive_tabulation(const string & s1, const string & s2, const string & s3) 
-    {
-        vector<vector<int>> compareTable(s1.size() +1, vector<int>(s2.size()+1, 0));
-        
-        for(size_t lin = 0; lin< compareTable.size(); ++lin)
-        {
-            for(size_t col = 0; col< compareTable[lin].size(); ++col)
-            {
-                //[lin, col] can come from two possibile statu : [lin-1, col], or [lin, col - 1] : we need one of this be true and the letter matches in s3
-                
-                if(lin == 0 && col ==0 ) compareTable[lin][col] = 1;
-                else if(lin==0)//this means take nothing from left,and all letters from right
-                {
-                    if(col>0)
-                        compareTable[lin][col] =  compareTable[lin][col-1] && s3[lin+col-1] == s2[col-1];
-                }
-                else if(col == 0)
-                {
-                    if(lin>0)
-                        compareTable[lin][col] =  compareTable[lin-1][col] && s3[lin+col-1] == s1[lin-1];
-                }
-                else
-                {
-                    compareTable[lin][col] =    (compareTable[lin-1][col] && s3[lin+col-1] == s1[lin-1])//take s1 word
-                                            ||  (compareTable[lin][col-1] && s3[lin+col-1] == s2[col-1]); //take s2 word
-                }
+        */
+
+        if(i3==s3.size()) return i1==s1.size() && i2==s2.size();
+
+        if(memory[i1][i2]!= -1) return memory[i1][i2];
+
+        {// try s1
+            int current1 = i1;
+            int current3 = i3;
+            while(current1<s1.size() && s1[current1] == s3[current3]){
+                ++current1;
+                ++current3;
             }
+            if(current1>i1) 
+                if(dfs(s1,s2,s3, current1, i2, current3, memory)) 
+                    return memory[i1][i2] = true;
         }
-        
-        return compareTable.back().back();//last value is 
-        
+        {//try s2
+
+            int current2 = i2;
+            int current3 = i3;
+            while(current2<s2.size() && s2[current2] == s3[current3]){
+                ++current2;
+                ++current3;
+            }
+            if(current2>i2) 
+                if(dfs(s1, s2, s3, i1, current2, current3, memory)) 
+                    return memory[i1][i2] = true;
+        }
+        return memory[i1][i2]=false;
     }
 
-    
-    bool isInterleave_recusive_with_memory(const string & s1, const string & s2, const string & s3) 
-    {
-        return isInterleave(s1, s2, s3, 0, 0, 0); 
+public:
+    bool isInterleave(string s1, string s2, string s3) {
+        vector<vector<int>> memory(s1.size()+1, vector<int>(s2.size()+1, -1));
+        return dfs(s1, s2, s3, 0 ,0, 0, memory);
     }
-
-    
-private:
-    bool isInterleave(const string & s1, const string & s2, const string & s3, size_t p1, size_t p2, size_t p3)
-    {
-        
-        if(memory[p1][p2] != -1) return memory[p1][p2];
-        
-        if(p1 == s1.size() && p2 == s2.size() && p3==s3.size())
-        {
-            memory[p1][p2] = 1;
-            return true;
-        }
-        
-        
-        if(p3 < s3.size())
-        {
-            memory[p1][p2] =   (p1<s1.size() && s1[p1] == s3[p3] && isInterleave(s1, s2, s3, p1 + 1, p2, p3 + 1)) 
-                            || (p2<s2.size() && s2[p2] == s3[p3] && isInterleave(s1, s2, s3, p1, p2 + 1, p3 + 1));  
-            //when doing this mean we will have deuplicated computations   !!!!!!!!!!! --> DP problem       
-        }
-        else
-            memory[p1][p2] = 0;
-        
-        return memory[p1][p2];
-    }
-    
-private:
-    vector<vector<int>> memory;
-
 };
