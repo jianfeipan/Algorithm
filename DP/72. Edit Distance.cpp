@@ -1,96 +1,70 @@
-class Solution {
-
 /*
-    Given two strings word1 and word2, return the minimum number of operations required to convert word1 to word2.
+You are given two strings word1 and target, each consisting of lowercase English letters.
 
-You have the following three operations permitted on a word:
+You are allowed to perform three operations on word1 an unlimited number of times:
 
-i = Insert a character
-d = Delete a character
-r = Replace a character
+Insert a character at any position
+Delete a character at any position
+Replace a character at any position
+Return the minimum number of operations to make word1 equal target.
 
+Example 1:
 
-Facts:
-1- 3 options, 
-2- transform from one to another2
-3- transformation is bi-direction, both works
+Input: word1 = "monkeys", target = "money"
 
-ideas
-1- find the longest sub sequence of word2 in word1
-    1.1- double pointer, recursive to try replace or remove
-    1.2- use fact 3, we can only do the transform from longer one to shorter or equals one.
-    1.3 recursive works!!, but time limit exceeded --> cache
-    1.4can we cut some branch:
-        --> idea: logic level  we need to cut some branches 
-        1.4.1 does it makes sense to do insert operation if longer is alread longer than shoter?
-             --> delete or replace makes more sense, casue when you add one, you will defnitly need to delete one
-             -- > not working on case "teacher", "tenace"
-        
+Output: 2
+Explanation:
+monkeys -> monkey (remove s)
+monkey -> money (remove k)
 
-base cases
-equals
-empty
+Example 2:
+
+Input: word1 = "neatcdee", target = "neetcode"
+
+Output: 3
+Explanation:
+neatcdee -> neetcdee (replace a with e)
+neetcdee -> neetcde (remove last e)
+neetcde -> neetcode (insert o)
 */
 
+/*
+idea:
+    two pointers compare i ->source j->target
+        if(!=) min =
+            insert: make a extra i to match j-> j++
+            delete: try next i to match j->     i++
+            replace: i matches j, let's move both like they are equal: i++, j++
+             -> recurvesive to next index
+!!! you don't realyy need to make the change on the string, just play with the pointers is ok.
+
+*/
+
+class Solution {
 private:
-    int minStepToTransoformFrom(const string & longer, const string & shorter, int  indexLong, int indexShort)
-    {   
-        
-        if(d_minSteps[indexLong][indexShort] != -1) return d_minSteps[indexLong][indexShort];
+    int dfs(const string& src, 
+            const string& target,
+            int i, int j, vector<vector<int>>& memory){
+        if(j == target.size()) return src.size()-i;
+        if(i == src.size()) return target.size()-j;
 
-        
-        int minCount = INT_MAX;
+        auto& cache = memory[i][j];
+        if(cache!=-1) return cache;
 
-        if(indexLong == longer.size()) minCount = shorter.size() - indexShort; //longer used up, insert all short needed
-
-        else if(indexShort == shorter.size()) minCount =  longer.size() - indexLong; // shorter waord all covered, remove the rest in long
-
-        else if(longer[indexLong] == shorter[indexShort]) minCount = minStepToTransoformFrom(longer, shorter, indexLong+1, indexShort+1); //match, nothing to do
-        else
-        {
-            //not equals, three options: r, i, d, and take the min one
-
-            int restShort = shorter.size() - indexShort;
-            int restLong =  longer.size() - indexLong;
-
-            //Replace is always worthy
-            minCount = std::min(minCount, 1+ minStepToTransoformFrom(longer, shorter, indexLong+1, indexShort+1));//Replace current one
-            
-            //if(restLong >= restShort) // try to cut branches
-                minCount = std::min(minCount, 1+ minStepToTransoformFrom(longer, shorter, indexLong+1, indexShort));//Delete the current one in longer
-            //if(restLong <= restShort)
-                minCount = std::min(minCount, 1+ minStepToTransoformFrom(longer, shorter, indexLong, indexShort+1));//Insert the current one in longer
+        if(src[i] == target[j]){
+            return cache = dfs(src, target, i+1, j+1, memory);
+        }else{
+            return cache = min({
+                1+dfs(src, target, i, j+1, memory), // insert
+                1+dfs(src, target, i+1, j+1, memory), // update
+                1+dfs(src, target, i+1, j, memory) // delete
+            });
         }
-
-        d_minSteps[indexLong][indexShort] = minCount;
-
-        return minCount;
     }
 
-    std::vector<std::vector<int>> d_minSteps;
-
 public:
-    int minDistance(string word1, string word2) {
-        
-        
-
-        string longer;
-        string shorter;
-
-        if(word1.size() >= word2.size()) 
-        {
-            longer = std::move(word1);
-            shorter = std::move(word2);
-
-        }
-        else
-        {
-            longer = std::move(word2);
-            shorter = std::move(word1);
-        }
-        d_minSteps = std::vector<std::vector<int>>(longer.size()+1, std::vector<int>(shorter.size()+1, -1));
-
-        return minStepToTransoformFrom(longer, shorter, 0, 0);
-
+    int minDistance(string word1, string target) {
+        vector<vector<int>> memory(word1.size(), vector<int>(target.size(), -1));
+        return dfs(word1, target, 0, 0, memory);
     }
 };
