@@ -1,86 +1,64 @@
+
 /*
-You are given a string s. We want to partition the string into as many parts as possible so that each letter appears in at most one part.
+You are given a string s consisting of lowercase english letters.
 
-Note that the partition is done so that after concatenating all the parts in order, the resultant string should be s.
+We want to split the string into as many substrings as possible, while ensuring that each letter appears in at most one substring.
 
-Return a list of integers representing the size of these parts.
+Return a list of integers representing the size of these substrings in the order they appear in the string.
 
 Example 1:
 
-Input: s = "ababcbacadefegdehijhklij"
-Output: [9,7,8]
-Explanation:
-The partition is "ababcbaca", "defegde", "hijhklij".
-This is a partition so that each letter appears in at most one part.
-A partition like "ababcbacadefegde", "hijhklij" is incorrect, because it splits s into less parts.
+Input: s = "xyxxyzbzbbisl"
+
+Output: [5, 5, 1, 1, 1]
+Explanation: The string can be split into ["xyxxy", "zbzbb", "i", "s", "l"].
+
 Example 2:
 
-Input: s = "eccbbbbdec"
-Output: [10]
+Input: s = "abcabc"
+
+Output: [6]
+
+
 */
 
-class Solution {
+
 
 /*
-fact:
-    1. any letter repeated should be in the same partition
-
 idea:
-    1. partition is good means nothing in rest of the string is in this partition: 
-        --> ointer [from, to] as artition, if "to+1" is already in this partition, we make ++to, if to+1 is a new letter, until the end, there is no more exsisted letter, first partition is good. 
+    each letter appears in at most one substring
+"xyxxyzbzbbisl"
+[5, 5, 1, 1, 1]
 
-    2. "rest doesn't have any letter in the current partition" -->  this is a complecated operations, why not resolve it by letters ? 
-        --> any letter has positions, first pos and last pos make a interval, then we need to merge intervals for all the letters we want to make in one range
+when I take x, I need to cover all the index of x [min, max]
+then I take letter max+1
 
+I need a structure to have the indexes in order for each letter:
 
+unordered_map<char, vector<int>> (we push index from left to right, it's naturally in order)
+array<vector<int>, 26>
 */
+class Solution {
 public:
     vector<int> partitionLabels(string s) {
-        std::array<std::array<int, 2>, 26> intervals;
-        for(int i = 0; i<26; ++i)
-        {
-            intervals[i][0] = -1;
+        unordered_map<char, int> letterLastIndex;
+        for(int i=0; i<s.size(); ++i){
+            letterLastIndex[s[i]] = i;
         }
 
-        for(int i = 0; i<s.size(); ++i)
-        {
-            int key = s[i]-'a';
-            if(intervals[key][0] == -1) intervals[key][0] = intervals[key][1] = i;
-            else intervals[key][1] = i;
-        }
-        vector<int> res;
-
-        int from = 0;
-        while(from<s.size())
-        {
-            const auto current = s[from];
-            int currentFrom = from;
-  
-            int currentEnd = intervals[current-'a'][1];
-            int to = currentEnd;
-
-            bool moreElementFound= true;
-            while(moreElementFound)
-            {
-                moreElementFound = false;
-                for(int j = currentFrom+1; j<currentEnd; ++j)
-                {
-                    if(intervals[s[j] - 'a'][1] > currentEnd)
-                    {
-                        to =max(intervals[s[j] - 'a'][1], to);
-                        moreElementFound = true;
-                    }
-
-                }
-                currentFrom = currentEnd;
-                currentEnd = to;
+        vector<int> subStrLen;
+        int l = 0;
+        while(l<s.size()){
+            int r = letterLastIndex[s[l]];
+            for(int i=l; i<=r; ++i){
+                // extend r to include all letter in current r
+                r = max(r, letterLastIndex[s[i]]);
             }
-
-            res.push_back(to - from+1);
-            from = to+1;
+            subStrLen.push_back(r-l+1);
+            l=r+1;
         }
-
-        return res;
+        
+        return subStrLen;
 
     }
 };
