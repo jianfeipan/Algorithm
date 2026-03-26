@@ -1,60 +1,49 @@
-class Solution {
-    
-    /*
-    Given an array of intervals where intervals[i] = [starti, endi], merge all overlapping intervals, and return an array of the non-overlapping intervals that cover all the intervals in the input.
+/*
+Merge Intervals
 
- 
+Given an array of intervals where intervals[i] = [start_i, end_i], merge all overlapping intervals, and return an array of the non-overlapping intervals that cover all the intervals in the input.
+
+You may return the answer in any order.
+
+Note: Intervals are non-overlapping if they have no common point. For example, [1, 2] and [3, 4] are non-overlapping, but [1, 2] and [2, 3] are overlapping.
 
 Example 1:
 
-Input: intervals = [[1,3],[2,6],[8,10],[15,18]]
-Output: [[1,6],[8,10],[15,18]]
-Explanation: Since intervals [1,3] and [2,6] overlaps, merge them into [1,6].
+Input: intervals = [[1,3],[1,5],[6,7]]
+
+Output: [[1,5],[6,7]]
 Example 2:
 
-Input: intervals = [[1,4],[4,5]]
-Output: [[1,5]]
-Explanation: Intervals [1,4] and [4,5] are considered overlapping.
- 
+Input: intervals = [[1,2],[2,3]]
 
-Constraints:
-
-1 <= intervals.length <= 104
-intervals[i].length == 2
-0 <= starti <= endi <= 104
+Output: [[1,3]]
 
 
-    */
+*/
+
+
+/*
+sort intervals by start,
+then start to add from first one: 
+    if empty, just add
+    if not empty: check if the current tail's end overlap with next interval to be add
+    -> push or merge(merge means end=max(end, newNode's end))
+
+*/
+class Solution {
 public:
-    vector<vector<int>> merge(vector<vector<int>>& intervals) 
-    {
-        //idea: sort, then use two pointer to merge
-        if(intervals.size()<=1) return intervals;//throw an exception
-        
+    vector<vector<int>> merge(vector<vector<int>>& intervals) {
         sort(intervals.begin(), intervals.end());
-        
-        vector<vector<int>> merged;
-        
-        vector<int> currentInterval = intervals[0];
-        
-        for(size_t i = 1; i<intervals.size(); ++i)
-        {
-            //()[], ([)], or([]) ---> dont'' foret that you did the sort
-            if(currentInterval[1] < intervals[i][0])
-            {
-                merged.push_back(currentInterval);
-                currentInterval = intervals[i];
-            }
-            else
-            {
-                currentInterval[1] = max(currentInterval[1], intervals[i][1]);
+
+        vector<vector<int>> merged; 
+        for(const auto& interval : intervals){
+            if(merged.empty() || merged.back()[1] < interval[0]){ // first or no overlapping
+                merged.push_back(interval);
+            }else{
+                merged.back()[1] = max(merged.back()[1], interval[1]); // extend the tail's end
             }
         }
-        
-        merged.push_back(currentInterval);
-        
-        return merged;
 
-       
+        return merged;
     }
 };
