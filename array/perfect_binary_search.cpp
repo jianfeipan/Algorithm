@@ -1,20 +1,20 @@
-pair<int,int> binarySearch(vector<int>& arr, int target) {
-    int l = 0, r = (int)arr.size() - 1;
-    while (l <= r) {
+int binarySearch(vector<int>& arr, int target) {
+    int l = -1, r = (int)arr.size();
+    
+    while (l+1!=r) {
         int m = l + (r - l) / 2;     // avoid overflow vs (l+r)/2
-        if (arr[m] == target)
-            return {m, m};            // exact match
-        else if (arr[m] < target)
-            l = m + 1;
+        if (arr[m] < target) // IS_BLUE:   BLUE l | r RED
+            l = m;
         else
-            r = m - 1;
+            r = m ;
     }
-    // No exact match. Now r < l, and r == l - 1.
-    // r = index of largest element < target  (-1 if none)
-    // l = index of smallest element > target (n if none)
-    //     (cannot be == target, since that returns {m,m} above)
-    return {r, l};
+    return l or r;
 }
+
+
+std::lower_bound: IS_BLUE(< target) return r : first element >= target
+std::upper_bound: IS_BLUE(<= target) return r: first element > target 
+
 
 /*
 Key insight: use while(l <= r) with l=m+1, r=m-1.
