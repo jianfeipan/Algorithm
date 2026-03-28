@@ -59,31 +59,38 @@ stack usage O(n)
 
 
     */
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
 private:
-int d_maxSum = INT_MIN;
-int _maxToLeaf(TreeNode* node) 
-{
-    if(!node) return 0;
-    auto leftMax = _maxToLeaf(node->left); 
-    auto rightMax = _maxToLeaf(node->right); 
-    d_maxSum = std::max(d_maxSum, node->val + std::max(0, leftMax) + std::max(0, rightMax));// this is running on all nodes we make use of this to update maxSum
-    return node->val + std::max(0, std::max(leftMax, rightMax));
+    // max  from root to left or right must include root
+    int maxFrom(TreeNode* root, int& globalMaxSum){
+        if(!root) return 0;
+        int curr = root->val;
+        int l = max(0, // if l < 0, we don't take it
+                    maxFrom(root->left, globalMaxSum));
+        int r = max(0, 
+                    maxFrom(root->right, globalMaxSum));
+        globalMaxSum = max(globalMaxSum, l+curr+r);
+        return max(l+curr, r+curr);
 
-}
+    }
 
-
-public:  
-int maxPathSum(TreeNode* root) 
-{
-    if(root == nullptr) return 0; 
-    // max if from left to a leaf
-    auto leftMax = _maxToLeaf(root->left); 
-    // right
-    auto rightMax = _maxToLeaf(root->right); 
-
-    d_maxSum = std::max(d_maxSum, root->val + std::max(0, leftMax) + std::max(0, rightMax));
-
-    return d_maxSum;
-}
+public:
+    int maxPathSum(TreeNode* root) {
+        int globalMaxSum = INT_MIN; 
+        maxFrom(root, globalMaxSum);
+        return globalMaxSum;
+    }
+};
 
 };
