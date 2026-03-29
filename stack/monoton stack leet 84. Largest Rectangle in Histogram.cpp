@@ -1,114 +1,69 @@
+/*
+You are given an array of integers heights where heights[i] represents the height of a bar. The width of each bar is 1.
+
+Return the area of the largest rectangle that can be formed among the bars.
+
+Note: This chart is known as a histogram.
+
+Example 1:
+
+Input: heights = [7,1,7,2,2,4]
+
+Output: 8
+Example 2:
+
+Input: heights = [1,3,7]
+
+Output: 7
+*/
+/*
+facts:
+    1. area = maxH * width
+idea:
+    BF: all rectangles: O(N^3)
+    for every bar: 
+        take it's hight
+        try to extend to left, and try to extend to right
+         0 1 2 3 4 5
+        [7,1,7,2,2,4]
+        0: 7
+        1: 0-5 6
+        2: 7
+        3: 2-5 8
+        ...
+        O(n^2)
+    stack: keep track the smaller heights increasing in stack
+            at index i
+           stack top > current[i],   pop
+           previous element (stop top)'s right extend will stop at i-1
+           left extend will stop at prev in the stack (top after pop)
+    
+
+*/
+
 class Solution {
 public:
-    int largestRectangleArea(vector<int>& heights) 
-    {
-        return largestRectangleArea_based_on_every_height(heights);
-    }
-    
-    int largestRectangleArea_based_on_every_height(vector<int>& heights) //O(N)
-    {
-        //idea is to check every bar, how far it can go to left and how far go to right
-        // before meeting a smaller one, so the rectangle based on hight of this bar stops here
-        // index      0 1 2 3 4 5 
-        // hights    [7,1,7,2,2,4]
-        // left limit[0,0,2,2,2,5]
-        //right limit[0,5,2,5,5,5]
-        //so the max will be loop on the bars the surface is: currentHight * (rightlimit - leftLimit+1)
-        using Index=int;
-        const int n = heights.size();
-        vector<Index> leftLimits(n, -1);
-        {   
-            // 1 2 6 <-8.  after 1 2 6 8
-            // 1 2 6 8 <- 5 after 1 2 5
-            // 1 2 5 <-2.  after 1 2 
-            // monotonStack: 
-            //.    > top() : just push
-            //     == top(): nothing go next
-            //     < top() : while top is biger, pop, and we note the last biger one.
-
-            stack<Index> increasing;
-            for(int i = 0; i<n;++i){
-                while(!increasing.empty() && heights[i] <= heights[increasing.top()]){
-                    increasing.pop();
-                }
-                if(!increasing.empty()){
-                    leftLimits[i] = increasing.top();
-                }
-                increasing.push(i);
-            }
-        }
-        vector<Index> rightLimits(n, n);
-        {
-            stack<Index> increasing;
-            for(int i = n-1; i>=0;--i){
-                while(!increasing.empty() && heights[i] <= heights[increasing.top()]){
-                    increasing.pop();
-                }
-                if(!increasing.empty()){
-                    rightLimits[i] = increasing.top();
-                }
-                increasing.push(i);
-            }
-        }
-        // for(int left:leftLimits) cout<<left<<',';
-        // cout<<endl;
-        // for(int right:rightLimits) cout<<right<<',';
-        // cout<<endl;
-
-        int maxSurface = 0;
-        for(int i = 0; i<n; ++i){
-            maxSurface = max(maxSurface, 
-                             heights[i] * (rightLimits[i] - leftLimits[i] - 1));
-        }
-        return maxSurface;
-    }
-
-    
-    int largestRectangleArea_brute_force_improved(vector<int>& heights) //O(N^2)
-    {
-        const size_t size = heights.size();
-        unordered_map<int, unordered_map<int, int>> minHeights;
+    int largestRectangleArea(vector<int>& heights) {
+        int n = heights.size();
+        int maxArea = 0;
+        stack<int> increasing;
         
-        for(size_t left = 0; left<=size; ++left)
-        {
-            int currentMin=INT_MAX;
-            for(size_t right = left; right<size; ++right)
-            {
-                currentMin = min(currentMin, heights[right]);
-                minHeights[left][right] = currentMin;
+        for(int i=0; i<=n; ++i){
+            while(!increasing.empty() 
+                && (heights[increasing.top()] >= heights[i]
+                    || i == n)){
+                auto lastBigger = heights[increasing.top()];
+                increasing.pop();
+                // witdh to previous smaller
+                auto width = increasing.empty() ? i : i - increasing.top() - 1;
+                maxArea = max(maxArea, width*lastBigger);
             }
+            increasing.push(i);
         }
-        
-        int largest = INT_MIN;
-        for(size_t left = 0; left<=size; ++left)
-        {
-            for(size_t right = left; right<size; ++right)
-            {
-                const int current = (right - left + 1) * minHeights[left][right];
-                largest = max(largest, current);
-            }
-        }
-        return largest;
-    }
-    
-    int largestRectangleArea_brute_force(vector<int>& heights) //O(N^3)
-    {
-        int largest = INT_MIN;
-        for(size_t left = 0; left<heights.size(); ++left)
-        {
-            for(size_t right = left; right<heights.size(); ++right)
-            {
-                int minHeight = INT_MAX;
-                
-                for(size_t i = left; i<=right; ++i)
-                {
-                    minHeight = min(minHeight, heights[i]);
-                }
-                
-                const int current = (right - left + 1) * minHeight;
-                largest = max(largest, current);
-            }
-        }
-        return largest;
+       
+
+
+        return maxArea;
+
     }
 };
