@@ -83,7 +83,9 @@ public:
             if(s[i] == '(') opens.push(i);
             else{
                 opens.pop();
-                if(opens.empty()) opens.push(i); // updating the position before the open
+                if(opens.empty()) opens.push(i); 
+                // too many closing, -1 was poped with a new invalid close, now
+                // we should update the potential valid starts after this invalid close
                 else{
                     //opens.top() is the position before the last validate opens, which was poped.
                     longest = max(longest, i - opens.top());
