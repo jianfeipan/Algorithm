@@ -7,70 +7,53 @@ determine the minimum operations to reduce all elements to zero or negative
 
 */
 
-bool check(long long K, const vector<int>& arr, int x, int y) {
-    long long extra_hits_needed = 0;
-    long long diff = x - y;
-    
-    for (int val : arr) {
-        if (val > K * y) {
-            // Calculate ceiling of (val - K*y) / diff
-            extra_hits_needed += (val - K * y + diff - 1) / diff;
+#include <bits/stdc++.h>
+using namespace std;
+
+long long min_operations(const vector<long long>& arr, long long x, long long y) {
+    auto feasible = [&](long long k) -> bool {
+        if (x > y) {
+            long long extra = x - y;
+            long long need = 0;
+            for (long long a : arr) {
+                long long remain = a - k * y;
+                if (remain > 0) {
+                    need += (remain + extra - 1) / extra;
+                    if (need > k) return false;
+                }
+            }
+            return need <= k;
+        } 
+        else if (x == y) {
+            for (long long a : arr) {
+                if (a > k * y) return false;
+            }
+            return true;
+        } 
+        else { // x < y
+            long long diff = y - x;
+            long long total_cap = 0;
+            for (long long a : arr) {
+                if (a > k * y) return false; // even x==y, we need at least a==ky, now x is small, we need more.
+                // every time being picked, we are missing to remove diff(y-x)
+                // if a is picked c times, we should have: a - k*y + c*diff <=0  : c<= (k*y-a)/diff
+                // and the sum of c should is k! 
+                // so  accumulated c(k) <= total_cap = sum((k*y-a)/diff)
+                total_cap += (k * y - a) / diff;
+                
+                if (total_cap >= k) return true;
+            }
+            return total_cap >= k;
         }
-    }
-    return extra_hits_needed <= K;
-}
+    };
 
-long long get_upper_bound(const vector<int>& arr, int x, int y) {
-    assert (y > 0) 
-    if(x>=y)
-    {
-        // If every op reduces everyone by at least y, 
-        // the max element determines the worst case.
-        int max_val = *max_element(arr.begin(), arr.end());
-        return (long long)(max_val + y - 1) / y; 
-    }
-    else{
-      int max_val = *max_element(arr.begin(), arr.end());
-       return (long long)(max_val + y - 1) / y + (max_val)*(y-x) * (x-1)/x;
-    }
-}
+    long long lo = -1, hi = 2;// -1 , N
+    while (!feasible(hi)) hi *= 2;
 
-int minOperations(vector<int>& arr, int x, int y) {
-    if(y == 0){
-        // If y is 0, we must hit every element manually.
-        int total_needed = 0;
-        for (int val : arr) {
-            total_needed += (val + x - 1) / x;// ceiling of result
-        }
-        return total_needed;
+    while (lo < hi) {
+        long long mid = lo + (hi - lo) / 2;
+        if (!feasible(mid)) lo = mid; // is blue
+        else hi = mid;
     }
-
-    if(x=0){
-      long long sumNeed = 0;
-      long long maxNeed = 0;
-  
-      for (long long x : arr) {
-          long long need = 0;
-          if (x > 0) need = (x + y - 1) / y; // ceil(x / y)
-          sumNeed += need;
-          maxNeed = max(maxNeed, need);
-      }
-
-      long long bySum = (sumNeed + (n - 2)) / (n - 1); // ceil(sumNeed / (n-1))
-      return max(maxNeed, bySum); // by the heighest, or after the operations, it left from every  skip
-    }
-  
-    long long low = 0, high = 1e9; // Adjust high based on constraints
-    int ans = high;
-
-    while (low <= high) {
-        long long mid = low + (high - low) / 2;
-        if (check(mid, arr, x, y)) {
-            ans = mid;
-            high = mid - 1;
-        } else {
-            low = mid + 1;
-        }
-    }
-    return ans;
+    return hi;
 }
