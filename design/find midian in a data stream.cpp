@@ -98,3 +98,112 @@ public:
         }
     }
 };
+
+
+
+#include <iostream>
+#include <queue>
+#include <vector>
+#include <cassert>
+#include <cmath>
+using namespace std;
+
+class MedianFinder {
+private:
+    priority_queue<int> maxHeap; // smaller half (max heap)
+    priority_queue<int, vector<int>, greater<int>> minHeap; // bigger half (min heap)
+public:
+    MedianFinder() {
+
+    }
+
+    void addNum(int num) {
+        maxHeap.push(num);
+        // move the largest of the smaller half to the bigger half
+        minHeap.push(maxHeap.top());
+        maxHeap.pop();
+        // rebalance: maxHeap should always have >= elements than minHeap
+        if(minHeap.size() > maxHeap.size()){
+            maxHeap.push(minHeap.top());
+            minHeap.pop();
+        }
+    }
+
+    double findMedian() {
+        if(maxHeap.size() == minHeap.size()){
+            return (maxHeap.top() + minHeap.top()) / 2.0;
+        }
+        return maxHeap.top();
+    }
+};
+
+int main() {
+    // Test 1: LeetCode example [1, 2, 3]
+    {
+        MedianFinder mf;
+        mf.addNum(1);
+        mf.addNum(2);
+        assert(mf.findMedian() == 1.5);
+        mf.addNum(3);
+        assert(mf.findMedian() == 2.0);
+        cout << "Test 1 passed: [1,2,3]" << endl;
+    }
+
+    // Test 2: single element
+    {
+        MedianFinder mf;
+        mf.addNum(5);
+        assert(mf.findMedian() == 5.0);
+        cout << "Test 2 passed: single element" << endl;
+    }
+
+    // Test 3: two elements
+    {
+        MedianFinder mf;
+        mf.addNum(1);
+        mf.addNum(2);
+        assert(mf.findMedian() == 1.5);
+        cout << "Test 3 passed: two elements" << endl;
+    }
+
+    // Test 4: negative numbers
+    {
+        MedianFinder mf;
+        mf.addNum(-1);
+        mf.addNum(-2);
+        mf.addNum(-3);
+        assert(mf.findMedian() == -2.0);
+        cout << "Test 4 passed: negative numbers" << endl;
+    }
+
+    // Test 5: duplicates
+    {
+        MedianFinder mf;
+        mf.addNum(5);
+        mf.addNum(5);
+        mf.addNum(5);
+        mf.addNum(5);
+        assert(mf.findMedian() == 5.0);
+        cout << "Test 5 passed: duplicates" << endl;
+    }
+
+    // Test 6: descending order
+    {
+        MedianFinder mf;
+        mf.addNum(6);
+        assert(mf.findMedian() == 6.0);
+        mf.addNum(5);
+        assert(mf.findMedian() == 5.5);
+        mf.addNum(4);
+        assert(mf.findMedian() == 5.0);
+        mf.addNum(3);
+        assert(mf.findMedian() == 4.5);
+        mf.addNum(2);
+        assert(mf.findMedian() == 4.0);
+        cout << "Test 6 passed: descending order" << endl;
+    }
+
+    cout << "All tests passed!" << endl;
+    return 0;
+}
+
