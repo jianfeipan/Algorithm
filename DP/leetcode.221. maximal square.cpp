@@ -55,46 +55,36 @@ public:
             1 1 1
          r  0 1 1
             1 1 1 
-            on position [r,c], the square's size depends on: 
-                1. how large is the square on r-1, c-1: for exmaple: 1 (if everything is good, r, c will be 1+1)
-                2. how many consecutive ones look left: 1
-                3. how many consecutive ones look up: 2
-            so the square can reach: min(1+1, 1, 2)=1
-
-            on position [r+1, c+1]:
-                1. how large is the square on r-1, c-1: for exmaple: 1 (if everything is good, r, c will be 1+1)
-                2. how many consecutive ones look left: 3
-                3. how many consecutive ones look up: 3
-            so the square can reach min(1+1, 3, 3) = 2 so the arear is 2*2 = 4
-            
-
 */
-        // consecutive ones look left and look up
+        // actually you don't need to know the up or left consecutive, after all we are looking at the min of them
+        // and the min of them is actually the dp itself: 
+        // dp[i][j] mins using i as right bottom point, what is the largest square size?
         // !!! using R+1 and C+1 to have a all zero edge on left and top to avoid r-1 anc c-1 out of boundry
-        vector<vector<int>> onesLeft(R+1, vector<int>(C+1, 0));
-        vector<vector<int>> onesUp(R+1, vector<int>(C+1, 0));
 
-        int maxArea = 0;
+        vector<vector<int>> dp(R+1, vector<int>(C+1, 0));
+        /*
+        
+        
+              c
+          0 0 0 0   
+          0 1 1 1
+        r 0 0 1 1
+          0 1 1 1 
+        */
+        int largest = 0;
         for(int r = 1; r <= R; ++r){
             for(int c = 1; c <= C; ++c){
                 if(matrix[r-1][c-1] == '1'){
-                   onesLeft[r][c] = onesLeft[r][c-1] + 1;
-                   onesUp[r][c] = onesUp[r-1][c] +1;
+                    dp[r][c] = min({
+                                    dp[r-1][c],
+                                    dp[r][c-1],
+                                    dp[r-1][c-1]
+                                  })+1;
+                    largest=max(largest, dp[r][c]);
                 }
             }
         }
         
-        vector<vector<int>> maxSize(R+1, vector<int>(C+1, 0));
-        int largest = 0;
-
-        for(int r = 1; r <= R; ++r){
-            for(int c = 1; c <= C; ++c){
-                if(matrix[r-1][c-1] == '1'){
-                    maxSize[r][c] = min({maxSize[r-1][c-1]+1, onesLeft[r][c], onesUp[r][c]});
-                    largest=max(largest, maxSize[r][c]);
-                }
-            }
-        }
         return largest*largest;
     }
 };
