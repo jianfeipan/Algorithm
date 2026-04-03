@@ -6,8 +6,10 @@ using namespace std;
 class Solution {
 public:
     int countPalindromes(string s) {
-        int mod = 1e9 + 7;
         const auto n=s.size();
+        if (n < 5) return 0;
+
+        int mod = 1e9 + 7;
         vector<array<array<int, 10>, 10> > before(n);
         {// before i, counts of A_B
             array<int, 10> count{};
