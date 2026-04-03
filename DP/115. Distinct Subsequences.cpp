@@ -47,5 +47,25 @@ public:
         vector<vector<int>> memory(s.size(), vector<int>(t.size(), -1));
 
         return dfs(s, t, 0, 0, memory);
+        // without memory: O(2^n) evert letter can be take or not
+        // with memory: O(m*n) space O(m*n)
     }
 };
+
+
+int main() {
+    Solution sol;
+
+    expect(sol.numDistinct("caaat", "cat"), 3, "caaat/cat");
+    expect(sol.numDistinct("xxyxy", "xy"), 5, "xxyxy/xy");
+    expect(sol.numDistinct("abc", ""), 1, "abc/empty t");
+    expect(sol.numDistinct("", "a"), 0, "empty s/a");
+    expect(sol.numDistinct("", ""), 1, "empty/empty");
+    expect(sol.numDistinct("abc", "abc"), 1, "abc/abc");
+    expect(sol.numDistinct("abc", "d"), 0, "abc/d no match");
+    expect(sol.numDistinct("aaa", "a"), 3, "aaa/a");
+    expect(sol.numDistinct("rabbbit", "rabbit"), 3, "rabbbit/rabbit");
+    expect(sol.numDistinct("babgbag", "bag"), 5, "babgbag/bag");
+    return 0;
+}
+
