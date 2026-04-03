@@ -35,8 +35,8 @@ public:
         targetY = abs(targetY);
 
         // Direction offsets for a knight
-        int dx[] = {1, 2, 2, 1, -1, -2, -2, -1};
-        int dy[] = {2, 1, -1, -2, -2, -1, 1, 2};
+        static constexpr int dx[] = {1, 2, 2, 1, -1, -2, -2, -1};
+        static constexpr int dy[] = {2, 1, -1, -2, -2, -1, 1, 2};
 
         unordered_set<pair<int,int>, PairHash> visited;
         queue<pair<int,int>> q;
