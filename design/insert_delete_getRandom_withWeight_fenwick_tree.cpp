@@ -1,66 +1,12 @@
-class RandomizedSet {
-public:
-    RandomizedSet() : _totalWeight(0) {}
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <stdexcept>
+#include <cassert>
+#include <cstdlib>
+#include <ctime>
 
-    bool insert(int val, int weight) {
-        if (_valToIndex.count(val)) return false;
-        if (weight <= 0) return false;
-
-        _valToIndex[val] = _values.size();
-        _values.push_back(val);
-        _weights.push_back(weight);
-
-        _totalWeight += weight;
-        _prefix.push_back(_totalWeight);
-        return true;
-    }
-
-    bool remove(int val) {
-        if (!_valToIndex.count(val)) return false;
-
-        size_t idx = _valToIndex[val];
-
-        _totalWeight -= _weights[idx];
-
-        _values.erase(_values.begin() + idx);
-        _weights.erase(_weights.begin() + idx);
-        _valToIndex.erase(val);
-
-        for (size_t i = idx; i < _values.size(); ++i) {
-            _valToIndex[_values[i]] = i;
-        }
-
-        rebuildPrefix();
-        return true;
-    }
-
-    int getRandom() {
-        if (_values.empty()) throw std::runtime_error("empty set");
-
-        long long r = 1 + rand() % _totalWeight;
-        auto it = std::lower_bound(_prefix.begin(), _prefix.end(), r);
-        return _values[it - _prefix.begin()];
-    }
-
-private:
-    void rebuildPrefix() {
-        _prefix.clear();
-        long long sum = 0;
-        for (int w : _weights) {
-            sum += w;
-            _prefix.push_back(sum);
-        }
-    }
-
-    unordered_map<int, size_t> _valToIndex;
-    vector<int> _values;
-    vector<int> _weights;
-    vector<long long> _prefix;
-    long long _totalWeight;
-};
-
-
-// rebuild prefixis O(n) -> are we having more update or more getRandome ?
+using namespace std;
 
 /*
  * 树状数组（Fenwick Tree / Binary Indexed Tree, BIT）
@@ -260,3 +206,78 @@ private:
     long long _totalWeight;               // 所有元素权重的总和
 };
 
+int main() {
+    srand((unsigned)time(nullptr));
+
+    // === Test FenwickTree ===
+    cout << "=== FenwickTree Tests ===" << endl;
+    FenwickTree ft(8);
+    // Add values 1..8 at positions 1..8
+    for (int i = 1; i <= 8; i++) ft.add(i, i);
+
+    // prefixSum tests
+    assert(ft.prefixSum(1) == 1);          // 1
+    assert(ft.prefixSum(3) == 6);          // 1+2+3
+    assert(ft.prefixSum(5) == 15);         // 1+2+3+4+5
+    assert(ft.prefixSum(8) == 36);         // 1+2+...+8
+    assert(ft.totalSum() == 36);
+    cout << "prefixSum tests passed" << endl;
+
+    // lowerBound tests
+    assert(ft.lowerBound(1) == 1);         // prefixSum(1)=1 >= 1
+    assert(ft.lowerBound(2) == 2);         // prefixSum(2)=3 >= 2
+    assert(ft.lowerBound(6) == 3);         // prefixSum(3)=6 >= 6
+    assert(ft.lowerBound(7) == 4);         // prefixSum(4)=10 >= 7
+    assert(ft.lowerBound(36) == 8);        // prefixSum(8)=36 >= 36
+    cout << "lowerBound tests passed" << endl;
+
+    // update test
+    ft.add(3, 10);  // position 3: 3 -> 13
+    assert(ft.prefixSum(3) == 16);         // 1+2+13
+    assert(ft.totalSum() == 46);
+    cout << "update tests passed" << endl;
+
+    // === Test WeightedRandomizedSet ===
+    cout << "\n=== WeightedRandomizedSet Tests ===" << endl;
+    WeightedRandomizedSet wrs(100);
+
+    // insert tests
+    assert(wrs.insert(10, 1) == true);
+    assert(wrs.insert(20, 3) == true);
+    assert(wrs.insert(30, 6) == true);
+    assert(wrs.insert(10, 5) == false);    // duplicate
+    assert(wrs.insert(40, 0) == false);    // zero weight
+    cout << "insert tests passed" << endl;
+
+    // getRandom should only return inserted values
+    unordered_map<int, int> freq;
+    for (int i = 0; i < 10000; i++) {
+        int v = wrs.getRandom();
+        assert(v == 10 || v == 20 || v == 30);
+        freq[v]++;
+    }
+    // weight ratio is 1:3:6, so val=30 should appear most often
+    cout << "getRandom distribution (10000 samples, weights 1:3:6):" << endl;
+    cout << "  val=10: " << freq[10] << " (~10%)" << endl;
+    cout << "  val=20: " << freq[20] << " (~30%)" << endl;
+    cout << "  val=30: " << freq[30] << " (~60%)" << endl;
+    assert(freq[30] > freq[20] && freq[20] > freq[10]);
+    cout << "getRandom distribution looks correct" << endl;
+
+    // remove tests
+    assert(wrs.remove(20) == true);
+    assert(wrs.remove(20) == false);       // already removed
+    freq.clear();
+    for (int i = 0; i < 10000; i++) {
+        int v = wrs.getRandom();
+        assert(v == 10 || v == 30);
+        freq[v]++;
+    }
+    cout << "after removing 20, distribution (weights 1:6):" << endl;
+    cout << "  val=10: " << freq[10] << " (~14%)" << endl;
+    cout << "  val=30: " << freq[30] << " (~86%)" << endl;
+    cout << "remove tests passed" << endl;
+
+    cout << "\nAll tests passed!" << endl;
+    return 0;
+}
