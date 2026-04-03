@@ -1,6 +1,10 @@
-/*
-85. Maximal Rectangle
+#include <iostream>
+#include <vector>
+#include <stack>
+#include <cassert>
+using namespace std;
 
+/*
 Given a rows x cols binary matrix filled with 0's and 1's, find the largest rectangle containing only 1's and return its area.
 
 Example 1:
@@ -126,3 +130,94 @@ public:
         return largest;
     }
 };
+
+int main() {
+    Solution sol;
+
+    // Test 1: Example from problem - expect 6
+    {
+        vector<vector<char>> matrix = {
+            {'1','0','1','0','0'},
+            {'1','0','1','1','1'},
+            {'1','1','1','1','1'},
+            {'1','0','0','1','0'}
+        };
+        int result = sol.maximalRectangle(matrix);
+        assert(result == 6);
+        cout << "Test 1 passed: " << result << endl;
+    }
+
+    // Test 2: Single '0' - expect 0
+    {
+        vector<vector<char>> matrix = {{'0'}};
+        int result = sol.maximalRectangle(matrix);
+        assert(result == 0);
+        cout << "Test 2 passed: " << result << endl;
+    }
+
+    // Test 3: Single '1' - expect 1
+    {
+        vector<vector<char>> matrix = {{'1'}};
+        int result = sol.maximalRectangle(matrix);
+        assert(result == 1);
+        cout << "Test 3 passed: " << result << endl;
+    }
+
+    // Test 4: All 1s 3x3 - expect 9
+    {
+        vector<vector<char>> matrix = {
+            {'1','1','1'},
+            {'1','1','1'},
+            {'1','1','1'}
+        };
+        int result = sol.maximalRectangle(matrix);
+        assert(result == 9);
+        cout << "Test 4 passed: " << result << endl;
+    }
+
+    // Test 5: All 0s - expect 0
+    {
+        vector<vector<char>> matrix = {
+            {'0','0'},
+            {'0','0'}
+        };
+        int result = sol.maximalRectangle(matrix);
+        assert(result == 0);
+        cout << "Test 5 passed: " << result << endl;
+    }
+
+    // Test 6: Single row - expect 3
+    {
+        vector<vector<char>> matrix = {
+            {'1','1','1','0','1'}
+        };
+        int result = sol.maximalRectangle(matrix);
+        assert(result == 3);
+        cout << "Test 6 passed: " << result << endl;
+    }
+
+    // Test 7: Single column - expect 3
+    {
+        vector<vector<char>> matrix = {
+            {'1'},{'1'},{'1'},{'0'},{'1'}
+        };
+        int result = sol.maximalRectangle(matrix);
+        assert(result == 3);
+        cout << "Test 7 passed: " << result << endl;
+    }
+
+    // Test 8: L-shape - tall column vs wide row
+    {
+        vector<vector<char>> matrix = {
+            {'1','0','0'},
+            {'1','0','0'},
+            {'1','1','1'}
+        };
+        int result = sol.maximalRectangle(matrix);
+        assert(result == 3);
+        cout << "Test 8 passed: " << result << endl;
+    }
+
+    cout << "All tests passed!" << endl;
+    return 0;
+}
