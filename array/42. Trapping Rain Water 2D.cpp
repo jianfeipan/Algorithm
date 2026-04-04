@@ -34,7 +34,7 @@ to find left max: one pass with a vector noted
 then we sum the min(leftMax, rightMax)
 */
 public:
-    int trap(vector<int>& height) {
+    int trap_prefixSum(vector<int>& height) {
         if(height.size()<=2) return 0;
         vector<int> leftMax=height;
         for(int i=1; i<leftMax.size(); ++i){
@@ -48,7 +48,27 @@ public:
         int sum=0;
         for(int i=1; i<=height.size()-2; ++i){
             auto maxHight = min(leftMax[i], rightMax[i]);
-            sum+=max(maxHight - height[i], 0);
+            sum += max(maxHight - height[i], 0);
+        }
+        return sum;
+    }
+    // one pass
+    int trap(vector<int>& height) {
+        int sum = 0;
+        int l=0, r=height.size()-1;
+        int lmax = 0;
+        int rmax = 0;
+        while(l<r){
+            lmax = max(lmax, height[l]);
+            rmax = max(rmax, height[r]);
+            if(lmax<=rmax){
+                sum += (lmax-height[l]);
+                ++l;
+            }else{
+                sum += (rmax-height[r]);
+                --r;
+            }
+            
         }
         return sum;
     }
