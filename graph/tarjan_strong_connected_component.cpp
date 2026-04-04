@@ -14,6 +14,7 @@ class TarjanSCC {
     unordered_map<int, int> low;
     // Low-link values: The earliest visited node reachable from this node (including itself).
     // when there is a back-edge to an ancestor, low-link value will be updated to that ancestor's usually lower discovery time.
+    // this is actually mined to be the smallest visitedAt in the cycle, so all nodes with same low, is one conponent.
 
     // Key insight:
     //   low < visitedAt  → "I can reach an ancestor, a back edge from me" → inside a cycle, ancestor will collect me
@@ -38,6 +39,9 @@ class TarjanSCC {
                 // If next is not visited, recurse
                 if (visitedAt.find(next) == visitedAt.end()) {
                     findSCC(next, adj);
+                    // with dfs, next's low is updated and here we min it back to "from"
+                    // thinks about 1->2->3->1, while 3->1 is a back edge and 3 is updated to low[1]
+                    // this allows 2 to be updated with low[1] as well.
                     low[from] = min(low[from], low[next]);
                 }
                 // If next is already visited and on the current path stack,
@@ -49,7 +53,9 @@ class TarjanSCC {
         }
 
         cout<< "retreat from " << from << ", visitedAt=" << visitedAt[from] << ", low=" << low[from] << endl;
-        // If from is a head node, pop the stack and generate an SCC
+        // If from is a head node, head node means the first node we start a cycle
+        // or a head node is just a normal node with out cycle, visitedAt == low.
+        // pop the stack and generate an SCC
         if (low[from] == visitedAt[from]) {
             vector<int> currentCycle;
             while (true) {
@@ -73,12 +79,12 @@ public:
         while(!path.empty()) path.pop();
         cycles.clear();
 
-        // Run DFS from every unvisited node to handle disconnected components
-        // for (auto const& [node, neighbors] : adj) {
-        //     if (visitedAt.find(node) == visitedAt.end()) {
-                findSCC(0, adj);
-        //     }
-        // }
+        //Run DFS from every unvisited node to handle disconnected components
+        for (auto const& [node, neighbors] : adj) {
+            if (visitedAt.find(node) == visitedAt.end()) {
+                findSCC(node, adj);
+            }
+        }
 
         return cycles;
     }
