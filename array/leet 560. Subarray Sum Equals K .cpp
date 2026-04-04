@@ -13,43 +13,6 @@ Input: nums = [1,2,3], k = 3
 Output: 2
 */
 
-class Solution {
-public:
-    int subarraySum_BF(vector<int>& nums, int k) {
-        /*
-            BF: check all subarrays: N+N-1+N-1 .. O(N^2), each subarray sum N : O(N^3)
-            i j
-            [1,2,3]
-            there are negative values! shouldn't stop when sum is > k
-        */
-        int counter = 0;
-        for(int l=0; l<nums.size(); ++l){
-            for(int r=l; r<nums.size(); ++r){
-                int sum=0;
-                for(int i=l; i<=r; ++i) sum+=nums[i];
-                if(sum == k) ++counter;
-            }
-        }
-        return counter;
-    }
-    // using a leftSum to reduce sum loop: O(N^2): any range of sum is leftSum1 - leftSum2
-    // [1, 2 , 3] -> [0, 1, 3, 6]
-    int subarraySum_leftSum(vector<int>& nums, int k){
-        vector<int> leftSum = {0};
-        for(int i=0; i<nums.size(); ++i){
-            leftSum.push_back(nums[i]+*leftSum.rbegin());
-        }
-
-        int counter=0;
-        for(int l=0; l<nums.size(); ++l){
-            for(int r=l; r<nums.size(); ++r){
-                if(leftSum[r+1] - leftSum[l] == k) ++counter;
-            }
-        }
-
-        return counter;
-    }
-    
 
     /*
     following the previous idea with leftSum, 
@@ -60,7 +23,7 @@ public:
     
     
     */
-    int subarraySum(vector<int>& nums, int k){
+    int subarraySum_onepass(vector<int>& nums, int k){
         unordered_map<int, int> sumFrequency; // this sum has how many substrings
         sumFrequency[0] = 1; // this is the base: for sum of zero, we have one solution
 
@@ -79,5 +42,4 @@ public:
 
         return count;
     }
-
 };
