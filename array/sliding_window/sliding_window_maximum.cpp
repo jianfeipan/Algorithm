@@ -30,7 +30,7 @@ idea:
     2. maintin a strcuture: when I move the window:
         - add the right side value, know the current max
         - remove the left side value and update the structure
-        -> from left right, if have have a bigger number, the previsous smaller num is no more needed
+        -> from left right, if have have a decreasing number, the previsous smaller num is no more needed
         becaue my window slide to right
         -> monoton stack: remova all smaller when push
         -> however: we need to drop to left side, we need index -> deque
@@ -50,18 +50,18 @@ public:
         vector<int> maxNums; maxNums.reserve(nums.size() - k +1); // 0 1 2 -> k =2
 
         using Index = int;
-        deque<Index> bigger;
+        deque<Index> decreasing;
 
         int r = 0;
         while(r<nums.size()){
             // pop all smaller nums
-            while(!bigger.empty() && nums[bigger.back()] < nums[r]) bigger.pop_back();
-            bigger.push_back(r);
+            while(!decreasing.empty() && nums[decreasing.back()] < nums[r]) decreasing.pop_back();
+            decreasing.push_back(r);
             
             // drop left (r-k+1), move only one step, so on need to use while
-            if(r>=k && bigger.front() < r-k+1) bigger.pop_front();
+            if(r>=k && decreasing.front() <= r-k) decreasing.pop_front();
             
-            if(r>=k-1) maxNums.push_back( nums[ bigger.front() ] );
+            if(r>=k-1) maxNums.push_back( nums[ decreasing.front() ] );
             ++r;
         }
 
