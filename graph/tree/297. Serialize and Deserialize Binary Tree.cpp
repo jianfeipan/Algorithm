@@ -38,8 +38,6 @@ private:
             serialize(root->left, serialized);
             serialize(root->right, serialized);
         }
-        return ;
-
     }
 
     TreeNode* deserialize(const vector<string> & tokens, int &pos){
