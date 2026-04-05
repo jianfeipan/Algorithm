@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include <stack>
+#include <cassert>
 
 using namespace std;
 
@@ -21,52 +22,24 @@ class TarjanSCC {
     //   low == visitedAt → scc root: could be one node or the start of the cycle.
 
     unordered_set<int> currentPath;
-    stack<int> path;
-
-    vector<vector<int>> cycles;
 
     void findSCC(int from, const unordered_map<int, unordered_set<int>>& adj) {
-        // Initialize discovery time and low-link value
         ++timer;
         visitedAt[from] = low[from] = timer;
-        path.push(from);
-        cout<< "visit push " << from << ", visitedAt=" << visitedAt[from] << ", low=" << low[from] << endl;
         currentPath.insert(from);
 
-        // Iterate through successors (if any exist in the map)
         if (adj.count(from)) {
-            for (int next : adj.at(from)) {
-                // If next is not visited, recurse
-                if (visitedAt.find(next) == visitedAt.end()) {
+            for (auto next : adj.at(from)) {
+                if (!visitedAt.count(next)) {
                     findSCC(next, adj);
-                    // with dfs, next's low is updated and here we min it back to "from"
-                    // thinks about 1->2->3->1, while 3->1 is a back edge and 3 is updated to low[1]
-                    // this allows 2 to be updated with low[1] as well.
                     low[from] = min(low[from], low[next]);
                 }
-                // If next is already visited and on the current path stack,
-                // it's a back-edge indicating a cycle
-                else if (currentPath.count(next)) {
-                    low[from] = min(low[from], visitedAt[next]);
+                else{
+                    if (currentPath.count(next)){
+                        low[from] = min(low[from], low[next]);
+                    }
                 }
             }
-        }
-
-        cout<< "retreat from " << from << ", visitedAt=" << visitedAt[from] << ", low=" << low[from] << endl;
-        // If from is a head node, head node means the first node we start a cycle
-        // or a head node is just a normal node with out cycle, visitedAt == low.
-        // pop the stack and generate an SCC
-        if (low[from] == visitedAt[from]) {
-            vector<int> currentCycle;
-            while (true) {
-                int node = path.top();
-                cout<< "pop " << node << " from stack for SCC with head " << from << endl;
-                path.pop();
-                currentPath.erase(node);
-                currentCycle.push_back(node);
-                if (from == node) break;
-            }
-            cycles.push_back(currentCycle);
         }
     }
 
@@ -75,15 +48,22 @@ public:
         timer = 0;
         visitedAt.clear();
         low.clear();
-        currentPath.clear();
-        while(!path.empty()) path.pop();
-        cycles.clear();
-
         //Run DFS from every unvisited node to handle disconnected components
         for (auto const& [node, neighbors] : adj) {
-            if (visitedAt.find(node) == visitedAt.end()) {
+            if (!visitedAt.count(node) ) {
+                currentPath.clear();
                 findSCC(node, adj);
             }
+        }
+
+        unordered_map<int, vector<int>> collectCycles;
+        for(const auto& [node, lowLinked] : low){
+            collectCycles[lowLinked].push_back(node);
+        }
+
+        vector<vector<int>> cycles; cycles.reserve(collectCycles.size());
+        for(auto& [_, nodesInCycle] : collectCycles){
+            cycles.emplace_back(std::move(nodesInCycle));
         }
 
         return cycles;
@@ -150,10 +130,11 @@ int main() {
     //
     // Expected SCCs: {10,20}, {100}, {200}
     unordered_map<int, unordered_set<int>> adj2 = {
-        {10, {20}},
+        {10, {20, 100}},
         {20, {10}},
         {100, {200}},
-        {200, {}}
+        {200, {}},
+        {300, {200}}
     };
 
     // Test Case 3: Two SCCs and a singleton
@@ -188,8 +169,8 @@ int main() {
     };
 
     printSCCs(1, solver.getSCCs(adj1));
-    // printSCCs(2, solver.getSCCs(adj2));
-    // printSCCs(3, solver.getSCCs(adj3));
+    printSCCs(2, solver.getSCCs(adj2));
+    printSCCs(3, solver.getSCCs(adj3));
 
     return 0;
 }
