@@ -34,151 +34,108 @@ idea:
 
 
 */
-constexpr array<array<int, 2>, 4> DIRECTIONS{{
-    {1, 0},
-    {-1, 0},
-    {0, 1},
-    {0, -1}
-}};
-class Solution_dfs {
-private:
-    bool dfs(const vector<vector<char>>& board, const string& word,
-            int index, int row, int col, vector<vector<bool>>& visited)
-    {
-        if(index == word.size()) return true;
+#include <array>
+#include <vector>
+#include <string>
+#include <iostream>
+using namespace std;
 
-        for(const auto& [dr, dc] : DIRECTIONS){
-            int r = row+dr;
-            int c = col+dc;
-            if(r<board.size() && r>=0
-               && c<board[0].size() && c>=0
-               && !visited[r][c]
-               && board[r][c] == word[index]){
-                visited[r][c] = true;
-                if(dfs(board, word, index+1, r, c, visited)) return true;
-                visited[r][c] = false;
+class Solution {
+
+private:
+    struct TrieNode{
+        array<TrieNode*, 26> next;
+        string const* word = nullptr;
+        TrieNode(){
+            for (int i = 0; i < 26; ++i) {
+                next[i] = nullptr;
             }
         }
-        return false;
+    };
+
+    constexpr static array<array<int, 2>, 4> DIRECTIONS{{
+        {1, 0},
+        {-1,0},
+        {0, 1},
+        {0,-1}
+    }};
+
+    void addWord(const string& s, int pos, TrieNode& root){
+        if(pos == s.size()) { root.word = &s; return; }
+        auto c = s[pos];
+        if(root.next[ c - 'a'] == nullptr){
+            root.next[ c - 'a'] = new TrieNode();
+        }
+        addWord(s, pos+1, *(root.next[ c - 'a']));
     }
 
-    bool findWord(const vector<vector<char>>& board, const string& word){
+    void dfs(vector<vector<char>>& board,
+            int r, int c,
+            TrieNode* root, vector<string>& fund){
+
+        if(!root) return;
+
+        if(root->word) {
+            fund.push_back(*(root->word));
+            root->word = nullptr; // avoid duplicates
+        }
+        // dfs neighbors, four directions and visited mark
+        for(const auto&[dr, dc] : DIRECTIONS){
+            auto newR = r+dr;
+            auto newC = c+dc;
+            if(newR<board.size()
+            && newR>=0
+            && newC<board[newR].size()
+            && newC>=0 && board[newR][newC]!='.'){
+                auto next = board[newR][newC];
+                board[newR][newC] = '.';
+                dfs(board, newR, newC, root->next[next - 'a'], fund);
+                board[newR][newC] = next;// backtrace
+            }
+        }
+    }
+
+public:
+    vector<string> findWords(vector<vector<char>>& board, vector<string>& words) {
+        TrieNode root;
+        for(const auto& word : words) addWord(word, 0, root);
+
+        vector<string> fund;
         for(int r=0; r<board.size(); ++r){
             for(int c=0; c<board[r].size(); ++c){
-                if(board[r][c] == word[0]){
-                    vector<vector<bool>> visited(board.size(), vector<bool>(board[0].size(), false));
-                    visited[r][c] = true;
-                    if(dfs(board, word, 1, r, c, visited)){
-                        return true;
-                    }
-                }
+                auto current = board[r][c];
+                board[r][c] = '.';
+                dfs(board, r, c, root.next[current - 'a'], fund);
+                board[r][c] = current;
             }
         }
 
-        return false;
-    }
-
-public:
-    vector<string> findWords(vector<vector<char>>& board, vector<string>& words) {
-        vector<string> found;
-
-        for(const auto& word : words){
-            if(findWord(board, word)){
-                found.push_back(word);
-            }
-        }
-
-        return found;
+        return fund;
     }
 };
 
-class Solution{// Trie + DFS
-struct TrieNode {
-    array<TrieNode*, 26> children{};
-    string* word = nullptr; // store the word at the end node
-};
+int main() {
+    Solution sol;
+    vector<vector<char>> board = {
+        {'o','a','a','n'},
+        {'e','t','a','e'},
+        {'i','h','k','r'},
+        {'i','f','l','v'}
+    };
+    vector<string> words = {"oath", "pea", "eat", "rain"};
+    auto result = sol.findWords(board, words);
+    cout << "Found words: ";
+    for (const auto& w : result) cout << w << " ";
+    cout << endl;
 
-private:
-    void insertWord(TrieNode* root, string& word) {
-        TrieNode* node = root;
-        for (char c : word) {
-            int index = c - 'a';
-            if (!node->children[index]) {
-                node->children[index] = new TrieNode();
-            }
-            node = node->children[index];
-        }
-        node->word = &word;
-    }
-    void dfs(const vector<vector<char>>& board, TrieNode* node,
-            int row, int col, vector<vector<bool>>& visited, vector<string>& found)
-    {   
-        if(!node) return;
-        
-        if(node->word){
-            found.push_back(*node->word);
-            node->word = nullptr; // avoid duplicate
-        }
+    // Test 2: empty board
+    vector<vector<char>> board2 = {};
+    vector<string> words2 = {"xoxo"};
+    auto result2 = sol.findWords(board2, words2);
+    cout << "Found words (empty board): ";
+    for (const auto& w : result2) cout << w << " ";
+    cout << endl;
 
-        for(const auto& [dr, dc] : DIRECTIONS){
-            int r = row+dr;
-            int c = col+dc;
-            if(r<board.size() && r>=0
-               && c<board[0].size() && c>=0
-               && !visited[r][c]){
-                char nextChar = board[r][c];
-                int index = nextChar - 'a';
-                if(node->children[index]){
-                    visited[r][c] = true;
-                    dfs(board, node->children[index], r, c, visited, found);
-                    visited[r][c] = false;
-                }
-            }
-        }
-    }
+    return 0;
+}
 
-public:
-    vector<string> findWords(vector<vector<char>>& board, vector<string>& words) {
-        const auto ROW = board.size();
-        const auto COL = board[0].size();
-
-        vector<string> found;
-
-        TrieNode* root = new TrieNode();
-        for(auto& word : words){
-            insertWord(root, word);
-        }
-
-        vector<vector<bool>> visited(ROW, vector<bool>(COL, false));
-        for(int r=0; r<ROW; ++r){
-            for(int c=0; c<COL; ++c){
-                char ch = board[r][c];
-                int index = ch - 'a';
-                if(root->children[index]){
-                    visited[r][c] = true;
-                    dfs(board, root->children[index], r, c, visited, found);
-                    visited[r][c] = false;
-                }
-            }
-        }
-
-        return found;
-    }
-};
-
-/*
-
-board =
-[["a","b","c"],
- ["a","e","d"],
- ["a","f","g"]]
-words =
-["abcdefg","gfedcbaaa","eaabcdgfa","befa","dgc","ade"]
-
-Use Testcase
-Output
-["abcdefg","gfedcbaaa","befa"]
-Expected
-["abcdefg","befa","eaabcdgfa","gfedcbaaa"]
-
-*/
