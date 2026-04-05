@@ -42,129 +42,52 @@ The length of the linked list is n.
  */
 
 class Solution {
-public:
-    // BF: a vector allows random access with index
-    // time O(N) space: O(N)
-    ListNode* reverseKGroup_vector_BF(ListNode* head, int k) {
-        vector<ListNode*> nodes;
-        auto current = head;
-        while(current)
-        {
-            nodes.push_back(current);
-            current = current->next;
-        }
+private:
+    void reverse(ListNode* head, ListNode* tail){
+        if(head == tail) return;
 
-        int groupCount = nodes.size()/k;
+        auto prev = head;
+        auto current = prev->next;
+        while(current!=tail){
+            auto next = current->next;
+            current->next = prev;
+            prev = current;
+            current = next;
+        }
+        tail->next = prev; // last one reverse
+        head->next = nullptr;
+    }
+public:
+    ListNode* reverseKGroup(ListNode* head, int k) {
         ListNode beforeFirst;
-        auto prev = &beforeFirst;
-        //reverse
-        // 0 1 2 3 4 5: index
-        // 1 2 3 4 5 6 k=3 group=2
-        // gourp 0: nodes[1]->next = nodes[0]
-        //          nodes[2]->next = nodes[1]
-        //          prev = nodes[0]
-        // 
-        for(int group = 0; group<groupCount; ++group)
-        {
-            for(int i=1; i<k; ++i)
-            {
-                int index = group*k + i;
-                nodes[index]->next = nodes[index-1];
-            }
-            prev->next = nodes[group*k+k-1];
-            prev = nodes[group*k];
+        auto* reversedTail = &beforeFirst;
+
+        auto* groupHead = head;
+        ListNode* groupTail = nullptr;
+        int n = 0;
+
+        auto* current = head;
+        while(current){
+            auto* next = current->next;
+            // 1->2->3->4->5->6
+            ++n;
+            if(n == k){
+                groupTail = current;
+                reverse(groupHead, groupTail);
+
+                reversedTail->next = groupTail;
+                reversedTail = groupHead;
+                
+                n=0;
+                groupHead = next;
+            } 
+            // group head, group tail
+            // gh    gt       gh
+            // 1<-2<-3 next = 4->5->6
+            current = next;
         }
         
-        if(nodes.size() > groupCount*k)
-            prev->next = nodes[groupCount*k];
-        else
-            prev->next = nullptr;
-
+        reversedTail->next = groupHead;
         return beforeFirst.next;
     }
-
-    // solution 2 _vector_smaller
-    // BF: a vector allows random access with index
-    // optimization: smaller vector: only K element
-    // time O(N) space: O(k)
-    ListNode* reverseKGroup_smaller_vector(ListNode* head, int k) 
-    {
-        vector<ListNode*> group;
-        group.reserve(k);
-        ListNode beforeFirst;
-        auto prev = &beforeFirst;
-
-        auto current = head;
-        while(current)
-        {
-            auto next = current->next;
-            group.push_back(current);
-            if(group.size()==k)
-            {
-                for(int i=1; i<group.size(); ++i)
-                {
-                    group[i]->next = group[i-1];
-                }
-                prev->next = group.back();
-                prev = group.front();
-                group.clear();
-            }
-            current = next;
-        }
-
-        prev->next = group.empty() ? nullptr : group.front();
-
-        return beforeFirst.next;
-    }
-
-    // solution 3 
-    // optimization:  any extra data structure is for knwoing the position, where to revers, where is the next begin
-    // we can just use pointers
-    // time O(N) space: O(1)
-    ListNode* reverseKGroup(ListNode* head, int k)
-    {
-        ListNode beforeFirst;
-        auto prev = &beforeFirst;
-        auto current = head;
-        int counter = 0;
-
-        auto reverse = [](ListNode * start, ListNode* end){
-            if(start == end) return;
-            auto prev = start;
-            auto current = start->next;
-            while(current!=end)
-            {
-                auto next = current->next;
-                current->next = prev;
-                prev = current;
-                current = next;
-            }
-            end->next = prev;
-            start->next = nullptr;//For saftly
-        };
-
-        ListNode* groupStart = current;
-        ListNode* groupEnd = nullptr;
-        while(current)
-        {
-            auto next = current->next;
-            ++counter;
-            if(counter == k){
-                groupEnd = current;
-                //reverse this group
-                reverse(groupStart, groupEnd); //TODO
-                prev->next = groupEnd;
-                prev = groupStart;
-                counter = 0;
-                groupStart = next;
-                groupEnd = nullptr;
-            }
-            current = next;
-        }
-        //assert(groupEnd == nullptr);
-        prev->next = groupStart;
-        return beforeFirst.next;
-    }
-
-    
 };
