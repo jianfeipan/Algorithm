@@ -22,24 +22,55 @@ class TarjanSCC {
     //   low == visitedAt → scc root: could be one node or the start of the cycle.
 
     unordered_set<int> currentPath;
+    stack<int> path;
+
+    vector<vector<int>> cycles;
 
     void findSCC(int from, const unordered_map<int, unordered_set<int>>& adj) {
+        // Initialize discovery time and low-link value
         ++timer;
         visitedAt[from] = low[from] = timer;
+        path.push(from);
+        //cout<< "visit push " << from << ", visitedAt=" << visitedAt[from] << ", low=" << low[from] << endl;
         currentPath.insert(from);
 
+        // Iterate through successors (if any exist in the map)
         if (adj.count(from)) {
-            for (auto next : adj.at(from)) {
-                if (!visitedAt.count(next)) {
+            for (int next : adj.at(from)) {
+                // If next is not visited, recurse
+                if (visitedAt.find(next) == visitedAt.end()) {
                     findSCC(next, adj);
+                    // with dfs, next's low is updated and here we min it back to "from"
+                    // thinks about 1->2->3->1, while 3->1 is a back edge and 3 is updated to low[1]
+                    // this allows 2 to be updated with low[1] as well.
                     low[from] = min(low[from], low[next]);
                 }
-                else{
-                    if (currentPath.count(next)){
-                        low[from] = min(low[from], low[next]);
-                    }
+                // If next is already visited and in the current path!
+                // it's a back-edge indicating a cycle
+                else if (currentPath.count(next)) {
+                    low[from] = min(low[from], visitedAt[next]);
+                    // Directed graph may have no problem with low=low, but undirected will have problem.
                 }
             }
+        }
+
+        // DFS went over all tree from "from", now we traced back 
+        // the path is in stack path
+
+
+        // If from is a head node, head node means the first node we start a cycle
+        // or a head node is just a normal node with out cycle, visitedAt == low.
+        if (low[from] == visitedAt[from]) {
+            vector<int> currentCycle;
+            while (true) {
+                int node = path.top();
+                //cout<< "pop " << node << " from stack for SCC with head " << from << endl;
+                path.pop();
+                currentPath.erase(node);
+                currentCycle.push_back(node);
+                if (from == node) break; // all nodes on top of "from" node is in the same SCC with "from"
+            }
+            cycles.push_back(currentCycle);
         }
     }
 
@@ -48,22 +79,21 @@ public:
         timer = 0;
         visitedAt.clear();
         low.clear();
+        currentPath.clear();
+        while(!path.empty()) path.pop();
+        cycles.clear();
+
         //Run DFS from every unvisited node to handle disconnected components
         for (auto const& [node, neighbors] : adj) {
-            if (!visitedAt.count(node) ) {
-                currentPath.clear();
+            if (visitedAt.find(node) == visitedAt.end()) {
                 findSCC(node, adj);
+                assert(path.empty());
+                assert(currentPath.empty());
             }
         }
 
-        unordered_map<int, vector<int>> collectCycles;
-        for(const auto& [node, lowLinked] : low){
-            collectCycles[lowLinked].push_back(node);
-        }
-
-        vector<vector<int>> cycles; cycles.reserve(collectCycles.size());
-        for(auto& [_, nodesInCycle] : collectCycles){
-            cycles.emplace_back(std::move(nodesInCycle));
+        for(const auto& [node, lowVal] : low){
+            cout<<node << " low: "<< lowVal<<endl;
         }
 
         return cycles;
