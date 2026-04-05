@@ -19,27 +19,29 @@
     -> minHeap: the top is smallest, size : number of lists log(k)
  
  */
+
 class Solution {
 public:
     ListNode* mergeKLists(vector<ListNode*>& lists) {
-        if(lists.empty()) return nullptr;
-        ListNode beforeFirst;
-        auto greater=[](const ListNode* left, const ListNode* right){
-            // assert(left&&right);
-            return left->val>right->val;
+
+        auto greater = [](const ListNode* left, const ListNode* right){
+            return left->val > right->val;
         };
-        std::priority_queue<ListNode*, vector<ListNode*>, decltype(greater) > minHeap(greater);
+        priority_queue<ListNode*, vector<ListNode*>, decltype(greater)> minHeap(greater);
 
-        for(auto head : lists) if(head) minHeap.push(head);
+        for(auto* head:lists) minHeap.push(head);
 
-        ListNode * current = &beforeFirst;
+        ListNode beforeFirst;
+        auto* current = &beforeFirst;
         while(!minHeap.empty()){
-            ListNode * top = minHeap.top(); minHeap.pop();
-            current->next = top;
-            if(top->next) minHeap.push(top->next);
+            auto* minNode = minHeap.top();minHeap.pop();
+            current->next = minNode;
+            
+            if(minNode->next) minHeap.push(minNode->next);
 
             current = current->next;
         }
+
         return beforeFirst.next;
     }
 };
