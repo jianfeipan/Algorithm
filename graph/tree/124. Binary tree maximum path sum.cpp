@@ -80,6 +80,8 @@ private:
                     maxFrom(root->left, globalMaxSum));
         int r = max(0, 
                     maxFrom(root->right, globalMaxSum));
+
+        // for loop to get all children's path
         globalMaxSum = max(globalMaxSum, l+curr+r);
         return max(l+curr, r+curr);
 
