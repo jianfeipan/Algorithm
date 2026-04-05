@@ -31,54 +31,62 @@ O(m*n) every cell we only compute once.
 space: O(m*n)
 */
 
-#include<array>
+/*
+[
+[1,2,3],
+[2,1,4],
+[7,6,5]
+]
 
-constexpr array<array<int, 2>, 4> DIRECTIONS{{
-    {-1, 0},
-    {1, 0},
-    {0, -1},
-    {0, 1},
-}};
-
+*/
+#include <array>
 class Solution {
 private:
-    int dfs(const vector<vector<int>>& matrix, 
-             int row, int col, vector<vector<int>>& memory){
+    constexpr static array<array<int, 2>, 4> DIRECTIONS{{
+        {1,0},
+        {-1,0},
+        {0,-1},
+        {0,1}
+    }};
 
-        auto& cache = memory[row][col];
-        if(cache != -1) return cache;
-        const auto& ROW = matrix.size();
-        const auto& COL = matrix[0].size();
+    int longestFrom(const vector<vector<int>>& matrix, 
+                    int r, int c,
+                    vector<vector<int>>& memory){
+        const auto& R = matrix.size();
+        const auto& C = matrix[0].size();
         
-        int maxLen = 1;
+        auto& cache = memory[r][c];
+        if(cache!=-1) return cache;
+
+        int longest = 1;
         for(const auto& [dr, dc] : DIRECTIONS){
-            int r = row+dr;
-            int c = col+dc;
-            if( r>=0 && r<ROW
-                && c>=0 && c<COL
-                && matrix[row][col] < matrix[r][c]){
-                maxLen = max(maxLen, 
-                    1+ dfs(matrix, r, c, memory));
+            auto newR = r+dr;
+            auto newC = c+dc;
+
+            if(newR<0 || newR>=R || newC<0 || newC>=C) continue;
+            if(matrix[r][c] < matrix[newR][newC]) {
+                longest = max(longest, 
+                    1+longestFrom(matrix, newR, newC, memory)
+                );
             }
         }
-        return cache = maxLen;
+        return cache = longest;
+
     }
 public:
     int longestIncreasingPath(vector<vector<int>>& matrix) {
-        const auto& ROW = matrix.size();
-        if(ROW == 0) return 0;
-        const auto& COL = matrix[0].size();
-        if(COL == 0) return 0;
+        const auto& R = matrix.size();
+        const auto& C = matrix[0].size();// 
 
-        vector<vector<int>> memory(ROW, vector<int>(COL, -1));
-        //noneed of visited: we are alwasy going up
-        int maxLen = 0;
-        for(int r=0; r<ROW; ++r){
-            for(int c=0; c<COL; ++c){
-                maxLen = max(maxLen, dfs(matrix, r, c, memory));
+        vector<vector<int>> memory(R, vector<int>(C, -1));
+        int longest = 1;
+        for(int r=0; r<R; ++r){
+            for(int c=0; c<C; ++c){
+                longest = max(longest, longestFrom(matrix, r, c, memory));
             }
         }
 
-        return maxLen;
+        return longest;
     }
 };
+
