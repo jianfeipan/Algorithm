@@ -64,62 +64,49 @@ h = 0!!!!-> need initialization
 class Solution {
 public:
     string foreignDictionary(vector<string>& words) {
-        unordered_map<char, unordered_set<char>>  successors;
-        unordered_map<char, int>  prerequisits;
-        for (string w : words) {
-            for (char c : w) {
-                successors[c] = unordered_set<char>();
-                prerequisits[c] = 0;
-            }
-        }
-        for(int i=0; i<words.size()-1; ++i){
-            const auto& s = words[i];
-            const auto& l = words[i+1];
-            const int minSize = min(s.size(), l.size());
-            //在字典序（Lexicographical Order）的逻辑中，有一个核心原则：如果一个单词是另一个单词的前缀，那么较短的单词必须排在较长的单词前面。
-            if(s.size() > l.size()
-                && s.substr(0, minSize) == l.substr(0, minSize)){
-                //invalide order
-                return "";
-            }
-            for(int j = 0; j<minSize; ++j){
-                if(s[j] != l[j]){
-                    if(!successors[s[j]].contains(l[j]))
-                    {
-                        successors[s[j]].insert(l[j]);
-                        ++prerequisits[l[j]];
+        unordered_map<char, unordered_set<char>> suffix;
+        unordered_map<char, int> prefixCout;
+        for(auto& word:words) for(auto& c:word) prefixCout[c] = 0;
+
+        for(int i=1; i<words.size(); ++i){
+            auto& left = words[i-1];
+            auto& right = words[i];
+
+            int len = min(left.size(), right.size());
+            int j=0;
+            for(; j<len; ++j){
+                const auto& l = left[j];
+                const auto& r = right[j];
+                if(l != r){ 
+                    if(!suffix[l].count(r)){
+                        suffix[l].insert(r);
+                        ++prefixCout[r];
                     }
                     break;
                 }
             }
-        }
-
-        queue<char> q;
-        for(auto& [c, prerequisit] : prerequisits){
-            if(prerequisit == 0 ){
-                q.push(c);
+            if(j==len){
+                if(left.size() > right.size()) return ""; // invalid order
             }
         }
 
-        string res;
+        //typology sort
+        string order;
+        queue<char> noPrefix;
+        for(const auto&[c, pres]:prefixCout){
+            if(pres==0) noPrefix.push(c);
+        } 
 
-        while(!q.empty()){
-            char current = q.front();
-            q.pop();
-            res.push_back(current);
-            for(char successor:successors[current]){
-                --prerequisits[successor];
-                if(0 == prerequisits[successor]){
-                    q.push(successor);
-                }
+        while(!noPrefix.empty()){
+            auto current = noPrefix.front(); noPrefix.pop();
+            for(const auto& c : suffix[current]){
+                --prefixCout[c];
+                if(prefixCout[c]==0) noPrefix.push(c);
             }
+            order+=current;
         }
 
-        //Cycle: if there is a cycle, it never goes to the Q, so we don't have it in the res
-        if(res.size() < prerequisits.size()){
-            return "";
-        }
-
-        return res;
+        return order.size()<prefixCout.size() ? "" : order;
     }
 };
+
