@@ -13,45 +13,35 @@ using namespace std;
 // Rules:
 //   '.' matches any single character
 //   '*' preceded by a letter means zero or more of that letter
-bool match(const string& s, int si, const string& p, int pi) {
-    // If pattern is exhausted, string must also be exhausted
-    if (pi == (int)p.size()) {
-        return si == (int)s.size();
+bool match(const string& s, const string& p, 
+                 int fromS, int fromP){
+    if(fromP == p.size()) return fromS == s.size();
+
+    bool starPattern = ( fromP<p.size()-1 && p[fromP+1] == '*');
+    if(fromS == s.size()){
+        if(starPattern) return isMatch(s, p, fromS, fromP+2);
     }
 
-    // Check if next pattern char is '*' (look-ahead)
-    bool starFollow = (pi + 1 < (int)p.size() && p[pi + 1] == '*');
 
-    if (starFollow) {
-        char ch = p[pi]; // the character before '*'
-
-        // Try matching zero occurrences of ch — skip "c*" in pattern
-        if (match(s, si, p, pi + 2)) {
-            return true;
+    // exact match
+    if(s[fromS] == p[fromP] || p[fromP] == '.'){
+        if(starPattern){
+            // abc a*, .*,
+            return isMatch(s, p, fromS+1, fromP+2)// match and consum the .*
+                || isMatch(s, p, fromS+1, fromP) // match reuse .*
+                || isMatch(s, p, fromS, fromP+2); // .* matches nothing
+        }else{
+            // abc ac , .c
+            return isMatch(s, p, fromS+1, fromP+1);
         }
-
-        // Try matching one or more occurrences of ch
-        int i = si;
-        while (i < (int)s.size() && (ch == '.' || s[i] == ch)) {
-            if (match(s, i + 1, p, pi + 2)) {
-                return true;
-            }
-            i++;
+    }else{
+        if(starPattern){// abc, b*
+            return isMatch(s, p, fromS, fromP+2); // b* missmatch
+        }else{// abc, d
+            return false;
         }
-        return false;
     }
-
-    // No star follows — current pattern char must match current string char
-    if (si == (int)s.size()) {
-        return false;
-    }
-
-    if (p[pi] == '.' || p[pi] == s[si]) {
-        return match(s, si + 1, p, pi + 1);
-    }
-
-    return false;
-}
+} 
 
 bool match(const string& s, const string& pattern) {
     return match(s, 0, pattern, 0);
