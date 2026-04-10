@@ -1,81 +1,32 @@
+// accumute lines, then becomes max 1's in histogram, with a monoton stack!!
+
 class Solution {
 public:
-    int numSubmat(vector<vector<int>>& mat) 
-    {
-        return numSubmat_cumulated_line(mat);
-    }
-    
-    int numSubmat_cumulated_line(const vector<vector<int>>& mat) //O(N^3)
-    {
-        vector<vector<int>> consecutiveOnesToRight(mat.size(), vector<int>(mat[0].size(), 0));
-        
-        for(int line = 0; line<mat.size(); ++line)
-        {
-            int cumulatedFromRight = 0;
-            for(int col = mat[line].size() - 1; col>=0; --col)
-            {
-                if(mat[line][col]) ++cumulatedFromRight;
-                else    cumulatedFromRight=0;
-            
-                consecutiveOnesToRight[line][col] = cumulatedFromRight;
-            }
-        }
+    int numSubmat(vector<vector<int>>& mat) {
+        int r = mat.size(), c = mat[0].size(), ans = 0;
+        vector<int> height(c);
+        for (int i = 0; i < r; i++) {
+            for (int j = 0; j < c; j++) height[j] = mat[i][j] ? height[j] + 1 : 0;// histogram!!!!
 
-        int count = 0;
-        for(int linFrom=0; linFrom < mat.size(); ++linFrom)
-        {
-            for(int colFrom = 0; colFrom < mat[0].size(); ++colFrom)
-            {
-                int minConsecutiveOnesToright = INT_MAX;
-                for(int linTo = linFrom; linTo < mat.size(); ++linTo)
-                {
-
-                    //from left topp point, cout with the cumulated table, which can tell how much consecutive 1s to right
-                    /*
-                    we need the min to cover right limits
-                    think about: 
-                    
-                    11111 --> count all
-                    11100 --> count 3
-                    11011 --> count 2
-                    11111 --> count2 !!!! : because we come from left top
-                    */
-                    minConsecutiveOnesToright = min(minConsecutiveOnesToright, consecutiveOnesToRight[linTo][colFrom]);
-                    count+=minConsecutiveOnesToright;//only consecutive 1s to right is interested for me
+            vector<int> sum(c);
+            stack<int> increasing;
+            for (int j = 0; j < c; j++) {
+                while (!increasing.empty() && height[increasing.top()] >= height[j]) increasing.pop();
+                // for hight_j, it can extend to most left to p or -1
+                // count the number using i, j as the right bottom point: height_j * len, where len = j-p
+                // basically how may 1's can build rectangle woth [i,j], before that we have sum[p], so plus it
+                if (!increasing.empty()) {
+                    int p = increasing.top();
+                    sum[j] = sum[p] + height[j] * (j - p);
+                } else {
+                    sum[j] = height[j] * (j + 1);
                 }
-            }
-        }
-        
-        return count;
-    }
 
-    
-    int numSubmat_brute_force(vector<vector<int>>& mat) //O(N^4)
-    {
-        int count = 0;
-        for(size_t linFrom=0; linFrom < mat.size(); ++linFrom)
-        {
-            for(size_t colFrom = 0; colFrom < mat[0].size(); ++colFrom)
-            {
-                if(mat[linFrom][colFrom] == 1 )
-                {
-                    size_t downBoundry = mat.size();
-                    size_t rightBoundry  =  mat[0].size();
-                    for(size_t linTo = linFrom; linTo <downBoundry;  ++linTo)
-                    {
-                        for(size_t colTo = colFrom; colTo <rightBoundry; ++colTo)
-                        {
-                            if(mat[linTo][colTo] == 1)
-                                ++count;
-                            else
-                                rightBoundry = colTo;//0 makes a new boundry, don't worry the down boundry, if we found a 0 down the current, when we get it we will stop with rightBoundry, too
-                        }
-                    }
-                }
+                increasing.push(j);
+
+                ans += sum[j];
             }
         }
-        
-        return count;
-            
+        return ans;
     }
 };
