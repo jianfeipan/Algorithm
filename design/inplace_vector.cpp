@@ -27,11 +27,6 @@ public:
         return _size;
     }
 
-    void emplace_back(){
-        std::construct_at(_nextLocation());
-        ++_size;
-    }
-    
     template<typename... Args>
     void emplace_back(Args...args){
         std::construct_at(_nextLocation(), args...);
