@@ -4,49 +4,46 @@
 #include <iostream>
 #include <memory>
 
-namespace qrt {
+namespace my {
 
 template <typename T, std::size_t Capacity>
-class inplace_vector{
+class inplace_vector {
 private:
-    char _data[Capacity*sizeof(T)];
-    int _size;
-    
-    T* _nextLocation(){
-        return (T*)(_data + sizeof(T) * _size);
-    }
+    alignas(T) char _data[Capacity * sizeof(T)];
+    std::size_t _size = 0;
+
+    T* data_ptr() { return reinterpret_cast<T*>(_data); }
+
 public:
-    inplace_vector():_size(0){
-    }
-    
-    size_t capacity(){
-        return Capacity;
+    inplace_vector() : _size(0) {}
+
+    // CRITICAL: Clean up resources
+    ~inplace_vector() {
+        std::destroy(begin(), end());
     }
 
-    size_t size(){
-        return _size;
-    }
+    size_t size() const { return _size; }
+    size_t capacity() const { return Capacity; }
 
     template<typename... Args>
-    void emplace_back(Args...args){
-        std::construct_at(_nextLocation(), args...);
+    void emplace_back(Args&&... args) {
+        if (_size >= Capacity) throw std::out_of_range("Capacity exceeded");
+        
+        std::construct_at(data_ptr() + _size, std::forward<Args>(args)...);
         ++_size;
     }
+
+    void push_back(const T& value) { emplace_back(value); }
+    void push_back(T&& value) { emplace_back(std::move(value)); }
+
+    T* begin() { return data_ptr(); }
+    T* end() { return data_ptr() + _size; }
     
-    void push_back(const T& data){
-        std::construct_at(_nextLocation(), data);
-        ++_size;
-    }
-    
-    T* begin(){
-        return (T*)_data;
-    }
-    
-    T* end(){
-        return _nextLocation();
-    }
+    // Const versions for iteration
+    const T* begin() const { return reinterpret_cast<const T*>(_data); }
+    const T* end() const { return reinterpret_cast<const T*>(_data) + _size; }
 };
-} // namespace qrt
+} // namespace my
 
 class Widget {
   int _val = 0;
@@ -84,7 +81,7 @@ class Widget {
 };
 
 int main() {
-    qrt::inplace_vector<Widget, 8> vi;
+    my::inplace_vector<Widget, 8> vi;
     vi.emplace_back();
     vi.emplace_back(42);
     vi.push_back(Widget(5));
