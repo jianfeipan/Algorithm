@@ -1,32 +1,61 @@
-// accumute lines, then becomes max 1's in histogram, with a monoton stack!!
+/*
+[
+    [1, 1,1],
+    [1,>1,0],
+    [1, 1,0]
+]
 
+loop (r,c): sum += numbers with (r, c) as the right bottom corner: every new node add new different matrices
+    -> numbers with (r, c)  is numbers of all 1s formed by the left top corner.
+                                        0    1   2 3  4  5
+        -> how many ones looking up, [ 2(1) 2(1) 1 2  5 >3 ]  represent now many consecutive 1s above
+                                                         c
+        -> if i have right bottom corner at index 5,
+            -> index 5: height 3 can extend width 1: 3*1
+            -> index 4: height 2 can extend width 3: 2*3
+            -> index 3 skipped
+            -> index 2: height 1 can extend width 6: 1*6
+            -> index 0, 1 skipped
+        -> monoton stack: increasing: knowing where do the current height stops to left
+        -> dp:if I know how many matrics on end1, so for end2 = end1+(more matrix [end1+1, end2])
+
+we are going to count the right bottom corner: 
+    - simplify it to " row by row hostogram"  
+    - make use of the monoton stack to find how the current height extends to lft 
+*/
 class Solution {
 public:
     int numSubmat(vector<vector<int>>& mat) {
-        int r = mat.size(), c = mat[0].size(), ans = 0;
-        vector<int> height(c);
-        for (int i = 0; i < r; i++) {
-            for (int j = 0; j < c; j++) height[j] = mat[i][j] ? height[j] + 1 : 0;// histogram!!!!
+        const auto& R = mat.size(); if(R==0) return 0;
+        const auto& C = mat[0].size(); if(C==0) return 0;
 
-            vector<int> sum(c);
+        int sum = 0;
+        vector<int> hist(C, 0);
+        for(int r=0; r<R; ++r){
+            //for each row: find the consecutive 1s looking up
+            for(int c=0; c<C; ++c){
+                if(mat[r][c]==0) hist[c] = 0;
+                else hist[c]+=1;
+            }
+
+            // check each point as right bottom corner monoton stack to check how far we can go to the left
             stack<int> increasing;
-            for (int j = 0; j < c; j++) {
-                while (!increasing.empty() && height[increasing.top()] >= height[j]) increasing.pop();
-                // for hight_j, it can extend to most left to p or -1
-                // count the number using i, j as the right bottom point: height_j * len, where len = j-p
-                // basically how may 1's can build rectangle woth [i,j], before that we have sum[p], so plus it
-                if (!increasing.empty()) {
-                    int p = increasing.top();
-                    sum[j] = sum[p] + height[j] * (j - p);
-                } else {
-                    sum[j] = height[j] * (j + 1);
+            vector<int> rowSum(C, 0);
+            for(int c=0; c<C; ++c){
+                // right bottom is [r,c]
+                auto currentHeight= hist[c];
+                while(!increasing.empty() && hist[increasing.top()]>=currentHeight) increasing.pop();
+                if(!increasing.empty()){
+                    auto leftSmallerIndex = increasing.top();
+                    rowSum[c]= rowSum[leftSmallerIndex] + currentHeight*(c - leftSmallerIndex); 
+                    // rowSum[leftSmallerIndex] is a DP thinking: from a previous c, i just have all them add here.
+                }else{
+                    rowSum[c]= currentHeight*(c + 1);          
                 }
-
-                increasing.push(j);
-
-                ans += sum[j];
+                increasing.push(c);
+                sum+=rowSum[c];
             }
         }
-        return ans;
+        return sum;
     }
 };
