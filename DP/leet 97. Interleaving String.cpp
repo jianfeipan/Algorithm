@@ -45,53 +45,23 @@ ideas:
 */
 class Solution {
 private:
-    bool dfs(const string& s1, const string& s2, const string& s3,
-            int i1, int i2, int i3, vector<vector<int>>& memory){
+    bool isInterleave(const string& s1, const string& s2, const string& s3,
+    int p1, int p2, vector<vector<int>>& memory){
+        int p3 = p1+p2;
+        if(p3 == s3.size()) return p1==s1.size() && p2 ==s2.size();
 
-        cout<< i1 << " - " << i2<< " - "<<i3<<endl;
-        /*
-          i
-        aaaa
-            i
-        bbbb
-              i
-        aabbbbaa
+        auto& cache = memory[p1][p2];
+        if(cache != -1) return cache;
         
-        */
-
-        if(i3==s3.size()) return i1==s1.size() && i2==s2.size();
-
-        if(memory[i1][i2]!= -1) return memory[i1][i2];
-
-        {// try s1
-            int current1 = i1;
-            int current3 = i3;
-            while(current1<s1.size() && s1[current1] == s3[current3]){
-                ++current1;
-                ++current3;
-            }
-            if(current1>i1) 
-                if(dfs(s1,s2,s3, current1, i2, current3, memory)) 
-                    return memory[i1][i2] = true;
-        }
-        {//try s2
-
-            int current2 = i2;
-            int current3 = i3;
-            while(current2<s2.size() && s2[current2] == s3[current3]){
-                ++current2;
-                ++current3;
-            }
-            if(current2>i2) 
-                if(dfs(s1, s2, s3, i1, current2, current3, memory)) 
-                    return memory[i1][i2] = true;
-        }
-        return memory[i1][i2]=false;
+        return cache = 
+              (s3[p3] == s1[p1] && p1<s1.size() && isInterleave(s1, s2, s3, p1+1, p2, memory))
+            ||(s3[p3] == s2[p2] && p2<s2.size() && isInterleave(s1, s2, s3, p1, p2+1, memory));
     }
-
 public:
     bool isInterleave(string s1, string s2, string s3) {
         vector<vector<int>> memory(s1.size()+1, vector<int>(s2.size()+1, -1));
-        return dfs(s1, s2, s3, 0 ,0, 0, memory);
+        // we could have p1 = size1 and p2 = 0 1, 2... so we need to have one more in the memory
+
+        return isInterleave(s1, s2, s3, 0, 0, memory);
     }
 };
