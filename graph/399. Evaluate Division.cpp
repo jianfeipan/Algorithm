@@ -25,6 +25,7 @@ class Solution {
 private:
     using Graph = unordered_map<string, unordered_map<string, double>>;
 
+    //O(V+E)
     double dfs(const string& current, const string& target,
                Graph& graph, unordered_set<string>& visited) {
         if(current == target) return 1.0;
@@ -52,6 +53,7 @@ private:
 public:
     vector<double> calcEquation(vector<vector<string>>& equations, vector<double>& values, vector<vector<string>>& queries) {
         Graph graph;
+        //O(V+E)
         for(int i = 0; i < (int)equations.size(); ++i){
             graph[equations[i][0]][equations[i][1]] = values[i];
             graph[equations[i][1]][equations[i][0]] = 1.0 / values[i];
