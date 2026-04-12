@@ -31,8 +31,9 @@ public:
         for(int i = 0; i<nums.size(); ++i)
         {
             prefixSum = prefixSum + nums[i];
-            maxSubArray = max(maxSubArray, prefixSum - minPrefixSumSofar);
             minPrefixSumSofar = min(minPrefixSumSofar, prefixSum);
+            
+            maxSubArray = max(maxSubArray, prefixSum - minPrefixSumSofar);
         }
         
         return maxSubArray;
