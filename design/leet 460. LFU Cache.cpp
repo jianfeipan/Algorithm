@@ -1,83 +1,85 @@
+template<typename K>
+class LFUPolicy{
+private:
+    using Freq = int;
+    using It = typename list<K>::iterator;
+    unordered_map<K, Freq> freq;
+    unordered_map<K, It> order;
+    map<int, list<K>> keysByFreq;
+public:
+    K getLFU(){
+        if(keysByFreq.empty()) return -1; //empty
+        return keysByFreq.begin()->second.front();//LRU
+    }
+
+    void touch(K key){
+        auto& frequency = freq[key];
+        auto it = order.find(key);
+        if(it != order.end()){
+            auto& pos = it->second;
+            keysByFreq[frequency].erase(pos);
+            if(keysByFreq[frequency].empty())
+                keysByFreq.erase(frequency);
+        }
+        
+        ++frequency;
+        keysByFreq[frequency].push_back(key);
+        order[key] = prev(keysByFreq[frequency].end());
+    }
+
+    void remove(K key){
+        auto it = freq.find(key);
+        if(it!=freq.end()){
+            auto frequency = it->second;
+
+            auto orderIt = order.find(key);
+            if(orderIt != order.end()){
+                auto& pos = orderIt->second;
+                keysByFreq[frequency].erase(pos);
+                if(keysByFreq[frequency].empty())
+                    keysByFreq.erase(frequency);
+                order.erase(orderIt);
+            }
+            freq.erase(it);
+        }
+            
+        
+    }
+};
+
 class LFUCache {
 private:
-    struct Metric
-    {
-        int value;
-        int freq;
-        list<int>::iterator pos;
-    };
-    
-    int _capacity;
-    unordered_map<int, Metric> _cache;
-    map<int, list<int>> _order;//order by frequency
-    
-public: 
+    unordered_map<int, int> data;
+    int capacity;
+    LFUPolicy<int> policy;
 
-    LFUCache(int capacity):
-    _capacity(capacity),
-    _cache(),
-    _order()
-    {
-        
+public:
+    LFUCache(int _capacity):capacity(_capacity), policy() {
     }
     
-    int get(int key)
-    {
-        auto it = _cache.find(key);
-        if(it==_cache.end()) return -1;
-        
-        markAsUsed(it);
-        
-        return it->second.value;
-        
+    int get(int key) {
+        if(!data.count(key)) return -1;
+
+        policy.touch(key);
+        return data[key];
     }
     
-    void put(int key, int value) 
-    {
-        auto it = _cache.find(key);
-        if(it==_cache.end())
-        {
-            if(_capacity==0)
-            {
-                auto leastFrequentlyList = _order.begin();
-                if(leastFrequentlyList!=_order.end())
-                {
-                    while(leastFrequentlyList->second.empty()) ++leastFrequentlyList;
-                    //cout<<"remove:"<<leastFrequentlyList->second.back()<<endl;
-                    _cache.erase(leastFrequentlyList->second.back());    
-
-                    leastFrequentlyList->second.pop_back();
-                    ++_capacity;
-                }
-            }
-            if(_capacity>0)
-            {
-                auto & orders = _order[1];
-                orders.push_front(key);
-
-                //cout<<"add:"<<key<<endl;
-                _cache[key] = {value, 1, orders.begin()};
-                --_capacity;
-            }
-        }
-        else
-        {
-            it->second.value = value;
-            markAsUsed(it);
-        }
+    void put(int key, int value) {
+        if(capacity == 0) return;
+        auto it = data.find(key);
+        if(it!=data.end()){// update
+            data[key] = value;
+            policy.touch(key);
+        }else{ // insert
+            if(data.size() == capacity){
+                auto lfuKey = policy.getLFU();
+                data.erase(lfuKey);
+                policy.remove(lfuKey);
+            } 
+            data[key] = value;
+            policy.touch(key);
+        }        
     }
-private:
-    void markAsUsed(unordered_map<int, Metric>::iterator it)
-    {
-        const auto markedFreq = ++(it->second.freq);
-        //cout<<"update freq : "<<it->first<<" : "<<markedFreq<<endl;
-        _order[markedFreq-1].erase( it->second.pos);
-        _order[markedFreq].push_front(it->first);
-        it->second.pos = _order[markedFreq].begin();
-    }
-    
-    
-
 };
 
 /**
@@ -85,4 +87,4 @@ private:
  * LFUCache* obj = new LFUCache(capacity);
  * int param_1 = obj->get(key);
  * obj->put(key,value);
- */ 
+ */
