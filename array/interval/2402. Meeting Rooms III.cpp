@@ -55,73 +55,80 @@ idea:
     - simulate the event, 
 
 */
+/*
+There are n rooms numbered from 0 to n - 1. You are given a 2D integer array meetings where meetings[i] = [start[i], end[i]] means that a meeting will be held during the half-closed time interval [start[i], end[i]). All the values of start[i] are unique.
+
+Meetings are allocated to rooms in the following manner:
+
+Each meeting will take place in the unused room with the lowest number.
+If there are no available rooms, the meeting will be delayed until a room becomes free. The delayed meeting should have the same duration as the original meeting.
+When a room becomes unused, meetings that have an earlier original start time should be given the room.
+Return the number of the room that held the most meetings. If there are multiple rooms, return the room with the lowest number.
+
+A half-closed interval [a, b) is the interval between a and b including a and not including b.
+
+Example 1:
+
+Input: n = 2, meetings = [[1,10],[2,10],[3,10],[4,10]]
+
+Output: 0
+
+*/
+
 class Solution {
 public:
     int mostBooked(int n, vector<vector<int>>& meetings) {
-        sort(meetings.begin(), meetings.end()); // mlogm
-        vector<int> rooms(n);
+        // count meetings in each room: map
+        vector<int> count(n);
 
-        /*
-        two minHeaps one for free and one for occupied
-        but simpler way is just loop on the room vector, check which one to take
-        or delay m*nlogn
-        */
+        // lowest room number for free
+        priority_queue<int, vector<int>, greater<int>> free;
 
-        using Room = int;
-        priority_queue<Room, vector<Room>, greater<Room>> free; 
-        using RoomEndTime = vector<long long>;
-        priority_queue<RoomEndTime, vector<RoomEndTime>, greater<RoomEndTime>> occupied; 
-        // used rooms: {end, roomNumber} greater on vector gives:
-        //  min by end, then min roomNumber
-        for(Room room=0; room<n; ++room) free.push(room);
+        // early released
+        using End = int;
+        using RoomNumber = int;
+        using Room = pair<End, RoomNumber>;
+        priority_queue<Room, vector<Room>, greater<Room>> used;
 
-        for(int i=0; i<meetings.size(); ++i){
-            auto& currentTime = meetings[i][0];
-            auto& currentEnd = meetings[i][1];
-            
-            // nlogn (room numbers)
-            while(!occupied.empty() && occupied.top()[0] <= currentTime){
-                free.push(occupied.top()[1]); // at current time free all finished rooms
-                
-                //cout<< "time:"<< occupied.top()[0] << " free: " <<occupied.top()[1]<<endl;
+        for(int i = 0; i<n; ++i) free.push(i);
 
-                occupied.pop();
+        sort(meetings.begin(), meetings.end());// sort by start, then end
+
+        for(const auto& meeting:meetings){
+            const auto& start = meeting[0];
+            const auto& end = meeting[1];
+
+            // we arrive at start time, release all the rooms end before start
+            while(!used.empty() && used.top().first <= start) {
+                const auto& [_, room] = used.top();
+                free.push(room);
+                used.pop();
             }
 
             if(!free.empty()){
-                auto room = free.top();
-                
-                //cout<< "time:"<< currentTime << " pick: " <<room<<endl;
-                
-                free.pop();
-                occupied.push({currentEnd, room});
-
-                ++rooms[room];
-            }else{                
-                // no free with curent StartTime:  delay to next free room: 
-                const auto earliestEnd = occupied.top()[0];
-                const auto room = occupied.top()[1];
-                const long long len = currentEnd-currentTime;
-                const long long newEndTime = earliestEnd + len;
-                
-                //cout<< "time:"<< earliestEnd << " release and pick" <<room<<endl;
-                
-                occupied.pop();
-                occupied.push({newEndTime, room});
-                ++rooms[room];
+                // take the lowest number room
+                const auto room = free.top();free.pop();
+                used.push({end, room});
+                //count for room
+                ++count[room];
+            }else{
+                //delay to the early released room
+                const auto [release, room] = used.top();used.pop();
+                const auto newEnd = release + (end - start);
+                used.push({newEnd, room});
+                //count for room
+                ++count[room];
             }
         }
 
-        int mostMeeting = 0;
-        int roomNumber = 0;
-        for(int i=0; i<n; ++i){
-            if(rooms[i]>mostMeeting){
-                mostMeeting = rooms[i];
-                roomNumber =i;
+        // find most count
+        int mostMeetings=0;
+        for(int i = 1; i<n; ++i){
+            if(count[mostMeetings]<count[i]){
+                mostMeetings = i;
             }
         }
-
-        return roomNumber;
+        return mostMeetings;
     }
 };
 
