@@ -40,50 +40,37 @@ Output: []
 */
 
 class Solution {
-
-
-   //imprivement!:  sub string may be resoved sevral times: cache
-public:
-   vector<string> wordBreak(string s, vector<string>& wordDict)
-   {
-      vector<string> sentences;
-
-      set<string> words;
-      for (const auto & word : wordDict)
-         words.insert(word);
-
-      return wordBreak(s, words);
-   }
-
 private:
-   unordered_map<string, vector<string>> cache;
+    vector<string> wordBreakFrom(int from, 
+                                const string& s, 
+                                const unordered_set<string>& dict, 
+                                unordered_map<int, vector<string>>& dp){
+        if(from == s.size()) return {""};
 
-   vector<string> wordBreak(string s, const set<string> & words)
-   {
-      if (cache.count(s)) return cache[s];
-
-      vector<string> setences;
-
-      if (words.count(s)) //a whole string is a word
-         setences.push_back(s);
-
-      for (size_t i = 0; i < s.size(); ++i)
-      {
-         string first = s.substr(0, i);
-         if (words.count(first))
-         {
-            vector<string> subSetences = wordBreak(s.substr(i), words);
-            for (const auto & subSetence : subSetences)
-               setences.push_back(first + " " + subSetence);
-
-         }
-      }
-      cache[s] = setences;
-      return setences;
-   }
+        auto it = dp.find(from);
+        if(it != dp.end()) return it->second;
 
 
+        vector<string> setences;
 
+        for(int to = from; to<s.size(); ++to){
+            auto current = s.substr(from, to-from+1);
+            if(dict.count(current)){
+                auto nextSetences = wordBreakFrom(to+1, s, dict, dp);
+                for(auto& nextSetence : nextSetences){
+                    if(nextSetence.empty()) setences.push_back(current);
+                    else setences.push_back(current+" "+nextSetence);
+                }
+            }
+        }
+        return dp[from] = setences;
+    }
+public:
+    vector<string> wordBreak(string s, vector<string>& wordDict) {
+        unordered_set<string> dict(wordDict.begin(), wordDict.end());
+        unordered_map<int, vector<string>> dp;
+        return wordBreakFrom(0, s, dict, dp);
+    }
 };
 
 template<typename T>
