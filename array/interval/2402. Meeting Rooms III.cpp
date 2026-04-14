@@ -75,19 +75,21 @@ Output: 0
 
 */
 
+
 class Solution {
 public:
     int mostBooked(int n, vector<vector<int>>& meetings) {
         // count meetings in each room: map
         vector<int> count(n);
 
-        // lowest room number for free
-        priority_queue<int, vector<int>, greater<int>> free;
-
-        // early released
-        using End = int;
+        using End = long long;
         using RoomNumber = int;
         using Room = pair<End, RoomNumber>;
+        // lowest room number for free
+        priority_queue<RoomNumber, vector<RoomNumber>, greater<RoomNumber>> free;
+
+        // early released
+
         priority_queue<Room, vector<Room>, greater<Room>> used;
 
         for(int i = 0; i<n; ++i) free.push(i);
@@ -107,14 +109,16 @@ public:
 
             if(!free.empty()){
                 // take the lowest number room
-                const auto room = free.top();free.pop();
+                const auto& room = free.top();
                 used.push({end, room});
+                free.pop();
                 //count for room
                 ++count[room];
             }else{
                 //delay to the early released room
-                const auto [release, room] = used.top();used.pop();
-                const auto newEnd = release + (end - start);
+                const auto [release, room] = used.top();
+                used.pop();
+                auto newEnd = release + (end - start);
                 used.push({newEnd, room});
                 //count for room
                 ++count[room];
