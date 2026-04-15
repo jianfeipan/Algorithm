@@ -1,148 +1,187 @@
 #include <vector>
-#include <algorithm>
-#include <unordered_map>
-#include <climits>
+#include <queue>
 #include <iostream>
+#include <cassert>
 using namespace std;
 
-/*
-intervals = [[1,3],[2,3],[3,7],[6,6]],
-queries = [2,3,1,7,6,8]
-
-2: [1,3],[2,3]
-3: [1,3],[2,3],[3,7]
-1: [1,3]
-7: [3,7]
-6: [3,7][6,6]
-8:..
-BF: O(I*Q)
-for each query Q, check all intervals I: Q*I
-
-can we only scan I once?
-sorting -> Q and I by start
-
-look at the timeline:
-
-[ [ q1[ [ [q2 [ [ [q3 [ [
-
-q1 can only be covered by I  "start before q1", -> candidates -> push
-q1 can only be covered by I  "end after q1", -> filter -> pop
-then we need the order of length (end - start+1) -> target -> minHeap (logI)
-
-*/
-
-
-
-// the solution with minHeap is not dynamic: when we update the intervals, we need to redo the whole coputations
-// if we want to cover the dynamic case: segement tree is the solution
-
-// Dynamic segment tree: no coordinate compression needed.
-// Works directly on the real value range [lo, hi].
-// Nodes are created on demand, so even range [0, 1e9] is fine — only O(n*logR) nodes.
-class DynamicSegmentTree{
-private:
-    struct Node{
-        int val   = INT_MAX; // min value covering this node's entire range
-        int left  = -1;      // child index, -1 = not created
-        int right = -1;
-    };
-
-    vector<Node> nodes;
-    int lo, hi;
-
-    int newNode(){
-        nodes.push_back({});
-        return nodes.size() - 1;
-    }
-
-    // no lazy: when [start,end] fully covers [l,r], store value here and stop
-    void update(int root, int start, int end, int value, int l, int r){
-        if(end < l || r < start) return;
-        if(start <= l && r <= end){
-            nodes[root].val = min(nodes[root].val, value);
-            return;
-        }
-        int m = l + (r - l) / 2;
-        if(nodes[root].left  == -1) nodes[root].left  = newNode();
-        if(nodes[root].right == -1) nodes[root].right = newNode();
-        update(nodes[root].left,  start, end, value, l, m);
-        update(nodes[root].right, start, end, value, m+1, r);
-    }
-
-    // collect the min of all node values along root-to-leaf path
-    int query(int root, int q, int l, int r, int currentMin){
-        if(root == -1) return currentMin;
-        currentMin = min(currentMin, nodes[root].val);
-        if(l == r) return currentMin;
-        int m = l + (r - l) / 2;
-        if(q <= m) return query(nodes[root].left,  q, l, m, currentMin);
-        else       return query(nodes[root].right, q, m+1, r, currentMin);
-    }
-
+class Solution_sort_and_minHeap {
 public:
-    DynamicSegmentTree(int lo, int hi) : lo(lo), hi(hi) {
-        newNode(); // root = index 0
-    }
+    vector<int> minInterval(vector<vector<int>>& intervals, vector<int>& queries) {
+        // sort intervals
+        sort(intervals.begin(), intervals.end());
 
-    // range update: mark [start,end] with min(value)
-    void addInterval(int start, int end, int value){
-        if(start > end) return;
-        update(0, start, end, value, lo, hi);
-    }
+        // sort queries
+        const auto n = queries.size();
+        vector<int> sortedQuery(n);
+        for(int i=0; i<n; ++i) sortedQuery[i] = i;
+        sort(sortedQuery.begin(), sortedQuery.end(), [&](int idx1, int idx2){
+            return queries[idx1] < queries[idx2];
+        });
 
-    // point query: returns min interval length covering q, or -1
-    int query(int q){
-        if(q < lo || q > hi) return -1;
-        int res = query(0, q, lo, hi, INT_MAX);
-        return res == INT_MAX ? -1 : res;
+        vector<int> ans(n);
+
+        using Len = int;
+        using End = int;
+        using Node = pair<Len, End>;
+        using MinHeap = priority_queue<Node, vector<Node>, greater<Node>>;
+        MinHeap minIntervals;
+
+        auto intervalIt = intervals.begin();
+
+        for(auto qIdx : sortedQuery){
+            auto query = queries[qIdx];
+            int minimalInterval = -1;
+            {
+                // push intervals start before the query into a miinHeap on len and end date
+                while(intervalIt!=intervals.end() && intervalIt->at(0) <= query){
+                    const auto len = intervalIt->at(1) - intervalIt->at(0) + 1; // [l,r] inclusive
+                    minIntervals.push({len, intervalIt->at(1)});
+                    ++intervalIt;
+                }
+
+                // pop intervals end bfore the query
+                while(!minIntervals.empty() && minIntervals.top().second < query){
+                    minIntervals.pop();
+                }
+                if(!minIntervals.empty()) minimalInterval = minIntervals.top().first;
+            }
+            ans[qIdx] = minimalInterval;
+        }
+
+        return ans;
+
     }
 };
 
-class Solution{
-public:
-    // build tree from intervals only — queries are NOT needed upfront
-    DynamicSegmentTree buildTree(vector<vector<int>>& intervals){
-        int lo = INT_MAX, hi = INT_MIN;
-        for(const auto& iv : intervals){
-            lo = min(lo, iv[0]);
-            hi = max(hi, iv[1]);
-        }
-        DynamicSegmentTree tree(lo, hi);
-        for(const auto& iv : intervals){
-            tree.addInterval(iv[0], iv[1], iv[1] - iv[0] + 1);
-        }
-        return tree;
-    }
+class Solution {
+private:
+    class SegementTree{
+    private:
+        constexpr static int MIN = 0;
+        constexpr static int MAX = 100000000;
+        struct Node{
+            int val=INT_MAX;
+            int left=-1;
+            int right=-1;
+        };
+        vector<Node> tree;
 
-    vector<int> minInterval(vector<vector<int>>& intervals, vector<int>& queries) {
-        auto tree = buildTree(intervals);
-        vector<int> ans;
-        for(int q : queries){
-            ans.push_back(tree.query(q));
+        int newNode(){
+            tree.emplace_back();
+            return tree.size() - 1;
         }
+
+        void update(int root, int l, int r, int start, int end, int val){
+            if(root == -1) return; // invalide node
+            if(end < l || r < start || r < l) return; //no overlapping
+
+            //cout<< root<<": ["<< l <<","<< r << "]"<<endl;
+
+            if(start <= l && r <= end){
+                tree[root].val = min(tree[root].val, val);
+                return;
+            }
+
+            int m = l + (r-l)/2;
+            if(tree[root].left == -1) tree[root].left = newNode();
+            if(tree[root].right == -1) tree[root].right = newNode();
+
+            update(tree[root].left, l, m, start, end, val);
+            update(tree[root].right, m+1, r, start, end, val);
+            // [l, m] and [m+1, r] instead of [l. m-1] because we are dong floor of  (r-l)/2
+            // so the m is biased toward left!!!
+        }
+
+        int query(int root, int l, int r, int q){
+            if(root == -1) return INT_MAX;
+            if(q < l || r < q) return INT_MAX;
+            if(l == r) return tree[root].val;
+
+            int m = l + (r-l)/2;
+            int child;
+            if(q<=m) child = query(tree[root].left, l, m, q);
+            else child = query(tree[root].right, m+1, r, q);
+            return min(tree[root].val, child);
+        }
+
+        void print(int root){
+            cout<<root<<":"<<tree[root].val;
+            if(tree[root].left != -1){
+                cout<< " { " ;
+                print(tree[root].left);
+                cout<< " , " ;
+                print(tree[root].right);
+                cout<< " } " ;
+            }
+        }
+
+    public:
+        SegementTree(){
+            tree.reserve(MAX*2);
+            newNode(); // make root
+        }
+
+        void addInterval(int start, int end){
+            if(end <start) return; // invalid input
+            int len = end - start +1; // [l,r] inclusive interval
+            update(0, MIN, MAX, start, end, len);
+        }
+
+        int minLenQuery(int q){
+            int res = query(0, MIN, MAX, q);
+            return res == INT_MAX ? -1 : res;
+        }
+
+        void printTree(){
+            print(0);
+        }
+    };
+
+public:
+    vector<int> minInterval(vector<vector<int>>& intervals, vector<int>& queries) {
+        SegementTree tree;
+        for(const auto& interval : intervals) tree.addInterval(interval.at(0), interval.at(1));
+
+        vector<int> ans; ans.reserve(queries.size());
+        for(const auto query : queries) ans.push_back(tree.minLenQuery(query));
+
+        //tree.printTree();
         return ans;
     }
 };
 
-int main() {
-    vector<vector<int>> intervals = {{4,5},{5,8},{1,9},{8,10},{1,6}};
-    vector<int> queries = {7};
 
+int main() {
     Solution sol;
 
-    // build once from intervals — no queries needed at build time
-    auto tree = sol.buildTree(intervals);
-
-    // query anything at any time
-    for(int q : queries){
-        cout << "query " << q << " -> " << tree.query(q) << endl;
+    // 测试用例 1：LeetCode 示例
+    // intervals = [[1,4],[2,4],[3,6],[2,8]], queries = [2,3,4,5]
+    // 期望输出: [3,3,3,4]
+    {
+        vector<vector<int>> intervals = {{1,4},{2,4},{3,6},{2,8}};
+        vector<int> queries = {2,3,4,5};
+        vector<int> result = sol.minInterval(intervals, queries);
+        assert((result == vector<int>{3,3,3,4}));
     }
-    // expected: query 7 -> 4 (interval [5,8] has size 4)
 
-    // can add more intervals dynamically and query new points
-    tree.addInterval(6, 7, 2); // new interval [6,7], length 2
-    cout << "query 7 after adding [6,7] -> " << tree.query(7) << endl;
-    // expected: 2
+    // 测试用例 2：LeetCode 示例
+    // intervals = [[2,3],[2,5],[1,8],[20,25]], queries = [2,19,5,22]
+    // 期望输出: [2,−1,4,6]
+    {
+        vector<vector<int>> intervals = {{2,3},{2,5},{1,8},{20,25}};
+        vector<int> queries = {2,19,5,22};
+        vector<int> result = sol.minInterval(intervals, queries);
+        assert((result == vector<int>{2,-1,4,6}));
+    }
 
+    // 测试用例 3：查询点不在任何区间内
+    {
+        vector<vector<int>> intervals = {{1,2},{3,4}};
+        vector<int> queries = {5};
+        vector<int> result = sol.minInterval(intervals, queries);
+        assert((result == vector<int>{-1}));
+    }
+
+    cout << "All tests passed!" << endl;
     return 0;
 }
