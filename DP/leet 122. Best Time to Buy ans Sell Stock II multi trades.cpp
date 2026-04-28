@@ -36,42 +36,19 @@ Constraints:
 class Solution {
 public:
     int maxProfit(vector<int>& prices) {
-        const auto n = prices.size();
-        vector<int> buy(n);
-        vector<int> sell(n);
-        vector<int> hold(n);
-        vector<int> wait(n);
 
-        buy[0] = -prices[0];
-        sell[0] = INT_MIN; // no possible on day 0
-        hold[0] = INT_MIN; // no possible on day 0
-        wait[0] = 0;
-        for(int i=1; i<n; ++i){
-            buy[i] = max(wait[i-1], sell[i-1]) - prices[i];
-            sell[i] = max(buy[i-1], hold[i-1]) + prices[i];
-            hold[i] = max(buy[i-1], hold[i-1]);
-            wait[i] = max(sell[i-1], wait[i-1]);
+        int holdStock = -prices[0];
+        int holdCash = 0;
+
+        for(int t = 1; t<prices.size(); ++t){
+            int prevHoldStock = holdStock;
+            int prevHoldCash = holdCash;
+
+            holdStock = max(prevHoldStock, prevHoldCash - prices[t]);
+            holdCash = max(prevHoldCash, prevHoldStock + prices[t]);
         }
 
-        return max(sell[n-1], wait[n-1]);
-    }
-};
-
-class Solution {
-public:
-    int maxProfit(vector<int>& prices) {
-        const auto n = prices.size();
-        int hold_stock = -prices[0];
-        int hold_cash = 0;
-
-        for(int i=1; i<n; ++i){
-            hold_stock = max(hold_stock, hold_cash - prices[i]); 
-            // hold_stock can from hold_stock or buy stock from hold cash
-            hold_cash = max(hold_cash, hold_stock + prices[i]); 
-            // hold_cash can from continue hold_cash, or sell the hold_stock
-        }
-
-        return hold_cash;// finaly we can only hold_cash
+        return holdCash;
     }
 };
 
