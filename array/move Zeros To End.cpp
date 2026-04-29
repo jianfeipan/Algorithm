@@ -22,8 +22,12 @@ using namespace std;
 void moveZerosToEnd(vector<int> & nums)
 {
     size_t noZeroZone = 0;
-    for(auto num : nums) if(num) nums[noZeroZone++] = num;
-    
+    for(auto num : nums) {
+        if(num){
+            nums[noZeroZone] = num;
+            ++noZeroZone;
+        }
+    }
     for(size_t index = noZeroZone; index<nums.size(); ++index) nums[index] = 0;
 }
 
