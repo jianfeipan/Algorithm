@@ -81,7 +81,8 @@ public:
                 auto height = heights[increasing.top()];
                 increasing.pop();
                 auto leftBoundry = increasing.empty() ? -1 : increasing.top();
-                auto width = r - 1 - leftBoundry;
+                auto rightBoundry = r - 1;// i !!! it can extend to i not just tallerIndex
+                auto width = rightBoundry - leftBoundry;
                 largest = max(largest, height*width);
             }
             increasing.push(r);
@@ -90,4 +91,3 @@ public:
 
     }
 };
-

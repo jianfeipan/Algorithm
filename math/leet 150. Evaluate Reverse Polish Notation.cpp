@@ -1,41 +1,34 @@
 class Solution {
+private:
+    template<typename Op>
+    void applyOperation(stack<int> & nums, Op op){
+        auto right = nums.top();
+        nums.pop();
+        auto left = nums.top();
+        nums.pop();
+        nums.push(op(left,right));
+    }
+
+
 public:
-    int evalRPN(vector<string>& tokens) 
-    {
-        return evalRPN(tokens, tokens.size() -1).first;
-        
-    }
-    
-    pair<int, int> evalRPN(const vector<string>& tokens, int current)
-    {
-        const auto operation = tokens[current];
-        
-        if(operation != "+"
-           && operation != "-"
-           && operation != "*"
-           && operation != "/")
-        {
-            return {stoi(tokens[current]), current - 1};
+    int evalRPN(vector<string>& tokens) {
+        stack<int> nums;
+        for(const auto & token:tokens){
+            if(token=="+"){
+                applyOperation(nums, [](int left, int right){ return left+right;});
+
+            }else if(token=="-"){
+                applyOperation(nums, [](int left, int right){ return left-right;});
+
+            }else if(token=="*"){
+                applyOperation(nums, [](int left, int right){ return left*right;});
+
+            }else if(token=="/"){
+                applyOperation(nums, [](int left, int right){ /*right!=0 check*/return left/right;});
+            }else{
+                nums.push(stoi(token));
+            }
         }
-        else
-        {
-            const auto right = evalRPN(tokens, current - 1);
-
-            const auto left = evalRPN(tokens, right.second);
-            int result = 0;
-            if(operation == "+")
-                result = left.first + right.first;
-            else if(operation == "-")
-                result = left.first - right.first;
-            else if(operation == "*")
-                result = left.first * right.first;
-            else if(operation == "/")
-                result = left.first / right.first;
-            
-            return {result, left.second};
-        }
-        
-
+        return nums.top();
     }
-
 };

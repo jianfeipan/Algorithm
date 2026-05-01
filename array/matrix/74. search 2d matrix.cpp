@@ -28,40 +28,28 @@ n == matrix[i].length
 1 <= m, n <= 100
 -10000 <= matrix[i][j], target <= 10000
 */
+/*
+RIGHT TOP corner is the key!!!!
+    - if target > right top, then we can drop the whole row, because the row is sorted, and the first element of next row is bigger than the right top
+    - if target < right top, then we can drop the whole column, because the column is sorted, and the right top is the smallest in that column
+    - if target == right top, then we find it
 
+
+*/ */
 class Solution {
 public:
     bool searchMatrix(vector<vector<int>>& matrix, int target) {
-        // binary search 
-        const int rowCount = matrix.size();
-        const int colCount = matrix[0].size();
-
-        // the challeng is to find [row][col] given x
-        // x = row*colCount + col
-        // row = x/colCount;
-        // col = x%colCount;
-
-        int start = 0;
-        int end = rowCount*colCount-1;
-        while(start<=end){
-            const int middle = (start+end)/2;
-            const int mrow = middle/colCount;
-            const int mcol = middle%colCount;
-            const int middleValue = matrix[mrow][mcol];
-
-            if(target > middleValue){
-                start = middle+1;
-            }else if(target < middleValue){
-                end = middle-1;
-            }else{
-                return true;
-            }
-            
+        const auto& R = matrix.size();
+        const auto& C = matrix[0].size();
+        int r=0;
+        int c=C-1;
+        while(r<R && c>=0){
+            const auto& cur = matrix[r][c];
+            if(cur == target) return true;
+            if(cur < target) ++r;
+            else --c;
         }
 
-
         return false;
-        
-
     }
 };

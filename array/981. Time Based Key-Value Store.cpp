@@ -33,7 +33,6 @@ key and value only include lowercase English letters and digits.
 */
 
 
-
 class TimeMap {
     using Value = pair<int, string>;
     using Values = vector<Value>;
@@ -51,21 +50,15 @@ public:
 
         const auto & values = d_values[key];
         //Binary search
-        int l = 0;
-        int r = values.size()-1;
-        int prev = -1;
-        while(l<=r){
-            const auto & m = l + (r-l) / 2;
-            if(values[m].first == timestamp) return values[m].second;
-            
-            if(values[m].first > timestamp){
-                r = m-1;
-            }else{
-                prev = m;
-                l = m+1;
-            }
+        int l = -1;
+        int r = values.size();
+        while(l+1!=r){
+            auto m = l + (r-l) / 2;
+            if(values[m].first <= timestamp) l=m; // IS_BLUE   BBBBBB]l   r[RRRRR
+            else r=m;
         }
-        if (prev == -1) return "";
-        return values[prev].second;
+
+        return (l==values.size() || l == -1)? "" : values[l].second;
     }
 };
+

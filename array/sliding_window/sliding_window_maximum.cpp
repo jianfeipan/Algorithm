@@ -47,25 +47,31 @@ idea:
 class Solution {
 public:
     vector<int> maxSlidingWindow(vector<int>& nums, int k) {
-        vector<int> maxNums; maxNums.reserve(nums.size() - k +1); // 0 1 2 -> k =2
+        //assert(nums.size() < k);
 
-        using Index = int;
-        deque<Index> decreasing;
+        // if i have a bigger one, i don't care the smaller ones, 
+        // so i will have a deacreasing queue: every time I have a bigger one, i pop the smaller ones
+        // --> monoton stack
 
-        int r = 0;
-        while(r<nums.size()){
-            // pop all smaller nums
-            while(!decreasing.empty() && nums[decreasing.back()] < nums[r]) decreasing.pop_back();
-            decreasing.push_back(r);
-            
-            // drop left (r-k+1), move only one step, so on need to use while
-            if(r>=k && decreasing.front() <= r-k) decreasing.pop_front();
-            
-            if(r>=k-1) maxNums.push_back( nums[ decreasing.front() ] );
-            ++r;
-        }
+        // however, we need to move element out of window from the front --> monoton deque
+        const auto& n =nums.size();
+        using Index =int;
+        using Value = int;
+        deque<pair<Index, Value>> window;// decreasing ex:  5 4 2 1
 
-        return maxNums;
+        vector<int> res; res.reserve(n-k+1);
+        for(int r=0; r<n; ++r){
+            auto right = nums[r];
+            while(!window.empty() && window.back().second < right) window.pop_back();
+            window.emplace_back(r, right);
+            // 0  1  2  3=r       
+            // 1 [2  1  0] 4  2  6        
+            if(r>=k) if(window.front().first <=r-k) window.pop_front();
+            if(r>=k-1) res.push_back(window.front().second);
+        }    
+
+        return res;
 
     }
 };
+

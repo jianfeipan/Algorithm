@@ -26,36 +26,31 @@ piles.length <= h <= 1,000,000
 */
 
 class Solution {
+
 public:
     int minEatingSpeed(vector<int>& piles, int h) {
-        //[1,4,3,2], h = 9
-        // BF: start from 1, simulate what happens
-        // improve1: speed >= theoritical min speed: sum{piles} / h
-        // improve2: no need to simulate, every pile time is just a division
-        int sum = 0;
-        int maxPile = 0;
-        for(int pile:piles) {
-            sum+=pile;
-            maxPile = max(maxPile, pile);
-        }
-        int minSpeed = max(sum/h,1);
-        int maxSpeed = maxPile;
-        int speed = maxSpeed;
-        while(minSpeed<=maxSpeed){
-            const int middleSpeed = (minSpeed+maxSpeed)/2;
-            int timeUsed = 0;
-            for(int pile:piles) {
-                timeUsed+=ceil(static_cast<double>(pile) / middleSpeed);
-            }
-            if(timeUsed<=h){//from large going to small, and find the last right boundry who satisfy the condition
-                speed = middleSpeed;
-                maxSpeed = middleSpeed-1;
-            }else{
-                minSpeed = middleSpeed+1;
-            }
-        }
         
-        
-        return speed;
+        auto time = [&piles](int rate){
+            int t = 0;
+            for(auto pile : piles){
+                t += ceil(static_cast<double>(pile) / rate);
+            }
+            return t;
+        };
+
+        int l = 0;
+        int r = *max_element(piles.begin(), piles.end())+1;
+
+        while(l+1!=r){
+            auto m = l+(r-l)/2;
+            if(time(m) <= h) r=m; 
+            // in a normal binary search, we do l=m when is_blue, that's because
+            // number going right is going bigger.
+            // but here when m going bigger, the time is going smaller, so we do r=m when is_blue
+            else l=m;
+        }
+
+        return r;
     }
 };
+

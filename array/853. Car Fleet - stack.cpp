@@ -66,7 +66,7 @@ public:
             orderedCars.push_back({position[i], speed[i]});
         }
         sort(orderedCars.rbegin(), orderedCars.rend());
-        // first is head, smaller time
+        //r!!!! from big to small, from cars closer to target
 
         stack<double> time;
         for(const auto & [pos, speed] : orderedCars){

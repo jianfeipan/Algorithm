@@ -1,22 +1,17 @@
 class Solution {
 public:
     int findMin(vector<int> &nums) {
-        //logN -> binary search
-        //[3,4,5,6,1,2]
-        // l-----r l-r
-        // binary search find where left > right (other places we have r>l)
+        if(nums.size()==1) return nums[0];
+        // find decreasing
+
         int l = 0;
         int r = nums.size()-1;
-        int min=nums[0];
-        while(l<=r){
-            int mid=l+(r-l)/2; // 防止益处
-            if(nums[mid]<min){
-                r=mid-1;
-                min=nums[mid];
-            }else{
-                l=mid+1;
-            }
+        while(l<r){
+            auto m = l+(r-l)/2;
+            if(nums[m] > nums[r]) l=m+1; // the min is on the right, because m is smaller than r, so m cannot be the min, so l=m+1
+            else r=m; 
         }
-        return min;
+        return nums[l];
+
     }
 };

@@ -28,8 +28,6 @@ Constraints:
 
 */
 
-class Solution {
-public:
 /*
 facts:
     1.Each CPU cycle allows the completion of a single task,
@@ -46,41 +44,46 @@ ideas:
     complexity: go over all  N tasks, maybe with n coll down time O(N*n)
 */
 
+#include <unordered_map>
+#include <queue>
+
+using namespace std;
+class Solution {
+public:
     int leastInterval(vector<char>& tasks, int n) {
-        vector<int> frequency(26, 0);
-        for(const auto& task:tasks) ++frequency[task-'A'];
+        unordered_map<char, int> freq;
+        for(auto t : tasks) ++freq[t];
 
-        //maxHeap: to be processed
-        priority_queue<int> toBeProcessed;
-        for(auto f : frequency){
-            if(f>0) toBeProcessed.push(f);
-        }
+        // take the most frequent 
+        priority_queue<int> to_process;
+        for(const auto& [_, f]:freq) to_process.push(f);
 
-        queue<pair<int, int>> cooldownTime_frequence;
+        // cool down task: time_freq
+        using TimeFreq = pair<int, int>;
+        queue<TimeFreq> cool_down;
 
         int t = 0;
-        while(!toBeProcessed.empty() || !cooldownTime_frequence.empty()){
+        while(!to_process.empty() || !cool_down.empty()){
             ++t;
-            if(!toBeProcessed.empty()){
-                const auto topFrequency = toBeProcessed.top();toBeProcessed.pop();
-                if(topFrequency>1)
-                    cooldownTime_frequence.push({ t+n, topFrequency-1});
-            }
-            else{//nothing to process, let's jump to the cooldownque
-                t = cooldownTime_frequence.front().first;
+            if(!to_process.empty()){
+                
+                auto most_freq = to_process.top(); to_process.pop();
+                // the rest of the same task should be process at t+n
+                if(most_freq>1) cool_down.push({t+n, most_freq-1});
+            } else {
+                auto [earlist, _] = cool_down.front();
+                t = earlist;
             }
 
-           
-
-            if(!cooldownTime_frequence.empty()){
-                const auto earliestCoolTask = cooldownTime_frequence.front();
-                if(earliestCoolTask.first <= t){
-                    toBeProcessed.push(earliestCoolTask.second);
-                    cooldownTime_frequence.pop();
-                }
+            if(!cool_down.empty()){
+                auto [earlist, freq] = cool_down.front();
+                if(t>=earlist){
+                    cool_down.pop();
+                    to_process.push(freq);
+                } 
             }
         }
-
+        
         return t;
     }
 };

@@ -67,6 +67,42 @@ private:
 };
 
 
+class MinStack {
+private:
+    stack<int> d_data;
+    stack<int> d_min;
+    
+public:
+    MinStack() {
+    }
+    
+    void push(int val) {
+        d_data.push(val);
+        if(d_min.empty() || val<=d_min.top()){ // !! <= because we want to push the duplicate min value, when pop, we can pop the min value
+            d_min.push(val);
+        }
+    }
+    
+    void pop() {
+
+        if(d_data.top()==d_min.top()){
+            d_min.pop();
+        }
+        d_data.pop();
+        
+    }
+    
+    int top() {
+        return d_data.top();
+    }
+    
+    int getMin() {
+        return d_min.top();
+    }
+};
+
+
+
 int main()
 {
    StackWithGetMin<int> s;
