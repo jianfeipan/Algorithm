@@ -22,11 +22,8 @@ public:
         auto upper = maxHeap.size();
         auto lower = minHeap.size();
 
-        if((upper+lower)%2 ==0){
-            return (maxHeap.top() + minHeap.top()) / 2.0;
-        }else{
-            return maxHeap.top();
-        }
+        if((upper+lower)%2 ==0) return (maxHeap.top() + minHeap.top()) / 2.0;
+        else return maxHeap.top();
     }
 };
 

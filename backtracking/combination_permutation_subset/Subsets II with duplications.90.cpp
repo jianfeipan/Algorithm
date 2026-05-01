@@ -144,15 +144,14 @@ private:
         current.push_back(nums[index]);
         _subsetsWithDup(nums, res, index+1, current);
         current.pop_back();
+
         // duplications!!!!!!
         //since duplications, if we don't use this, we need skip all duplications
-        while(nums[index+1] == nums[index]){
-            ++index;
-        }
+        auto next = index+1;
+        while(nums[next] == nums[index]) ++next;
 
         // skip current number
-        _subsetsWithDup(nums, res, index+1, current);
-
+        _subsetsWithDup(nums, res, next, current);
     }
 public:
     vector<vector<int>> subsetsWithDup(vector<int>& nums) 
