@@ -1,4 +1,34 @@
 
+
+class Solution {
+private:
+    void subsets(vector<int>& nums, 
+                int from, 
+                vector<int>& current, 
+                vector<vector<int>>& res){
+        if(from == nums.size())  { res.push_back(current); return; }
+
+        // take from
+        auto num = nums[from];
+        current.push_back(num);
+        subsets(nums, from+1, current, res);
+        current.pop_back();
+
+        auto next = from+1;
+        while(nums[next] == num) ++next;
+        // don't take from
+        subsets(nums, next, current, res);
+    }
+
+public:
+    vector<vector<int>> subsetsWithDup(vector<int>& nums) {
+        vector<vector<int>> res;
+        vector<int> current;
+        sort(nums.begin(), nums.end());
+        subsets(nums, 0, current, res);
+        return res;
+    }  
+};
 /*
 90. Subsets II
 Medium
@@ -29,138 +59,3 @@ Constraints:
 -10 <= nums[i] <= 10
 
 */
-class Solution {
-
-    /*
-    fact: 
-        1 start from empty
-        2 no duplication
-        3 no order 
-
-    idea: 
-        1 as a humman, start from 0 element, 1 element ....
-            1.1 how to avoid duplication? 
-                --> 1.1.1 process generates all possibilitie and remove duplications when output the result
-                           []
-                            |         \
-                        1: []                   [1]
-                            | \                   |   \
-                        2: []  [2]               [1]          [1,2]
-                            |\   |\               |\            |\  
-                        2: [][2] [2][2,2]      [1]  [1,2]      [1,2] [1,2,2]
-
-                dedupolication: set<vector<int>>
-
-                --> 1.1.2 find a way to avoid duplication in the process : transform input to a count map
-                        [1 2 2]-> 
-                            0 element:  []
-                            1 element:  [], 1: [1], 2: [2] 2:-[2]-duplicated
-                            2 element:  [], [1], [2]  [1, 2], [2,2] []
-                        
-    
-    */
-
-private:
-    vector<vector<int>> subsetsWithDup_iterative(vector<int>& nums) {
-
-        std::sort(nums.begin(), nums.end());
-        
-        set<vector<int>> subSets{{}};
-        for(int num: nums ){
-            set<vector<int>> nextLevel;
-            for(  auto subSet: subSets){
-                subSet.push_back(num);
-                nextLevel.insert(subSet);
-            }
-            subSets.insert(
-                std::make_move_iterator(nextLevel.begin()), 
-                std::make_move_iterator(nextLevel.end()));
-
-        }
-
-        return vector<vector<int>>(
-            std::make_move_iterator(subSets.begin()), 
-            std::make_move_iterator(subSets.end()));
-    }
-
-    void addElement(const vector<int>& nums, int currentIndex, vector<int>& currentSubset, vector<vector<int>>& subSets){
-        subSets.push_back(currentSubset);
-
-        if(currentIndex>=nums.size()) return;
-
-        for (int i = currentIndex; i < nums.size(); i++)
-        {
-            int currentNum = nums[i];
-            if (i > currentIndex)
-            {
-                int prevNum = nums[i - 1];
-                if (currentNum == prevNum)
-                {
-                    continue;//skip repeated 
-                }
-            }
-            currentSubset.push_back(currentNum);
-            addElement(nums, i+1, currentSubset,subSets);
-            currentSubset.pop_back();
-        }
-    }
-
-    vector<vector<int>> subsetsWithDup_recursive(vector<int>& nums) {
-
-        std::sort(nums.begin(), nums.end());
-        vector<vector<int>> subSets;
-        vector<int> currentSubset;
-        
-        addElement(nums, 0, currentSubset, subSets);
-
-        return subSets;
-    }
-public:
-    vector<vector<int>> subsetsWithDup(vector<int>& nums) {
-        return subsetsWithDup_recursive(nums);
-    }
-};
-
-
-class Solution_2026
-{
-/*
-permution or subset, always back track is a easier way: 
-    from index, use it or not use it, r use which number,
-    then dfs to the end then pop back to come to the prev state
-
-for duplication
-*/
-
-private:
-    void _subsetsWithDup(const vector<int>& nums, vector<vector<int>> & res, int index, vector<int>& current )
-    {
-        if(index == nums.size()){
-            res.push_back(current);
-            return;
-        }
-
-        // use current number
-        current.push_back(nums[index]);
-        _subsetsWithDup(nums, res, index+1, current);
-        current.pop_back();
-
-        // duplications!!!!!!
-        //since duplications, if we don't use this, we need skip all duplications
-        auto next = index+1;
-        while(nums[next] == nums[index]) ++next;
-
-        // skip current number
-        _subsetsWithDup(nums, res, next, current);
-    }
-public:
-    vector<vector<int>> subsetsWithDup(vector<int>& nums) 
-    {
-        sort(nums.begin(), nums.end());
-        vector<vector<int>> res;
-        vector<int> current;
-        _subsetsWithDup(nums, res, 0, current);
-        return res;
-    }
-};
-

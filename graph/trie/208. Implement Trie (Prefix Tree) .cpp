@@ -28,51 +28,53 @@ Constraints:
 word and prefix are made up of lowercase English letters.*/
 #include<array>
 class PrefixTree {
-
 private:
-struct Node{
-    //lowercase English letters
-    bool m_isWord;
-    std::array<Node*, 26> m_nexts;
-    Node(): m_isWord(false), m_nexts{}{
+    struct Node{
+        //unordered_map<char, unique_ptr<Node>> children;
+        array<Node*, 26> children{};
+        bool is_word; 
+    };
 
+    Node* newNode(){
+        pool.emplace_back();
+        return &pool.back();
     }
-};
 
-Node m_root;
+    Node* root;
+    vector<Node> pool; // memory pool!! 
 public:
-    PrefixTree():m_root() {
-        
+    PrefixTree() {
+        constexpr static size_t CAPACITY = 1024;
+        pool.reserve(CAPACITY);
+        root = newNode();
     }
     
     void insert(string word) {
-        Node* current = &m_root;
-        for(char c : word){
-            if(!current->m_nexts[c-'a']){
-                current->m_nexts[c-'a'] = new Node();
-            }
-            current = current->m_nexts[c-'a'];
+        Node* cur = root;
+        for(auto c : word) {
+            auto index = c-'a';
+            if(!cur->children[index]) cur->children[index] = newNode();
+            cur = cur->children[index];
         }
-        current->m_isWord = true;
-        
+        cur->is_word = true;
     }
     
     bool search(string word) {
-        Node* current = &m_root;
-        for(char c : word){ 
-            auto* next = current->m_nexts[c-'a'];
-            if(!next) return false;
-            current = next;
+        Node* cur = root;
+        for(auto c : word) {
+            auto index = c-'a';
+            if(!cur->children[index]) return false;
+            cur = cur->children[index];
         }
-        return current->m_isWord;
+        return cur->is_word;
     }
     
     bool startsWith(string prefix) {
-        Node* current = &m_root;
-        for(char c : prefix){ 
-            auto* next = current->m_nexts[c-'a'];
-            if(!next) return false;
-            current = next;
+        Node* cur = root;
+        for(auto c : prefix) {
+            auto index = c-'a';
+            if(!cur->children[index]) return false;
+            cur = cur->children[index];
         }
         return true;
     }

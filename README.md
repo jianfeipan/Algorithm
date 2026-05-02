@@ -118,6 +118,7 @@
 
 ## Trie
 - Implement Trie / Prefix Tree (LC 208)
+- word search II
 
 ## Topological Sort
 - Course Schedule (LC 207)
@@ -158,13 +159,13 @@
 - Distinct Subsequences (LC 115)
 - Count Palindromic Subsequences (LC 2484)
 
-## Techniques / Sorting
+## Sorting
 - Sort Colors (LC 75)
 - Next Permutation (LC 31)
 - Find the Duplicate Number (LC 287)
 - Majority Element (LC 169)
 
-## Matrix
+## Matrix manipulation
 - Set Matrix Zeroes (LC 73)
 - Spiral Matrix (LC 54)
 - Rotate Image (LC 48)
