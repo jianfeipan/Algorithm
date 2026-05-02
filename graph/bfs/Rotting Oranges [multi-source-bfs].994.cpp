@@ -20,7 +20,7 @@ Output: 4
 class Solution {
 // BFS multi-source
 private:
- array<pair<int, int>, 4> directions = {{
+ constexpr static array<pair<int, int>, 4> directions = {{
         { 1,0},
         {-1,0},
         {0, 1},
@@ -45,14 +45,11 @@ public:
             //one level
             const int size = q.size();
             for(int i=0; i<size; ++i){
-                int r = q.front().first;
-                int c = q.front().second;
-                q.pop();
-                
+                auto [r, c] = q.front(); q.pop();
 
-                for(const auto& direction : directions){
-                    int nr = r+direction.first;
-                    int nc = c+direction.second;
+                for(const auto& [dr, dc] : directions){
+                    auto nr = r+dr;
+                    auto nc = c+dc;
                     if( nr>=0 && nr<grid.size() 
                     && nc>=0 && nc<grid[nr].size()
                     && grid[nr][nc] == 1){
