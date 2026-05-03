@@ -59,54 +59,55 @@ n 1
 r 1
 h = 0!!!!-> need initialization
 */
-
-#include <array>
 class Solution {
 public:
     string foreignDictionary(vector<string>& words) {
-        unordered_map<char, unordered_set<char>> suffix;
-        unordered_map<char, int> prefixCout;
-        for(auto& word:words) for(auto& c:word) prefixCout[c] = 0;
+        unordered_map<char, unordered_set<char>> prefix;
+        unordered_map<char, unordered_set<char>> postfix;
+
+        unordered_set<char> letters;
+        for (const auto& word : words) {
+            for (char c : word) {
+                letters.insert(c);
+            }
+        }   
 
         for(int i=1; i<words.size(); ++i){
-            auto& left = words[i-1];
-            auto& right = words[i];
+            const auto& left = words[i-1];
+            const auto& right = words[i];
 
-            int len = min(left.size(), right.size());
-            int j=0;
-            for(; j<len; ++j){
-                const auto& l = left[j];
-                const auto& r = right[j];
-                if(l != r){ 
-                    if(!suffix[l].count(r)){
-                        suffix[l].insert(r);
-                        ++prefixCout[r];
-                    }
+            int min_len = min(left.size(), right.size());
+            int c = 0;
+
+            for(; c < min_len; ++c){
+                if(left[c] != right[c]){
+                    prefix[right[c]].insert(left[c]);
+                    postfix[left[c]].insert(right[c]);
                     break;
                 }
             }
-            if(j==len){
-                if(left.size() > right.size()) return ""; // invalid order
+
+            // invalid case
+            if(c == min_len && left.size() > right.size()) return "";
+        }
+
+        // typology sort
+        queue<char> visit;
+        for(auto letter : letters){
+            if(prefix[letter].empty()) visit.push(letter);
+        }
+        string sorted;
+        while(!visit.empty()){
+            auto cur = visit.front();visit.pop();
+            sorted.push_back(cur);
+            for(auto next : postfix[cur]){
+                prefix[next].erase(cur);
+                if(prefix[next].empty()) visit.push(next);
             }
         }
 
-        //typology sort
-        string order;
-        queue<char> noPrefix;
-        for(const auto&[c, pres]:prefixCout){
-            if(pres==0) noPrefix.push(c);
-        } 
+        return sorted.size() == letters.size() ? sorted : "";
 
-        while(!noPrefix.empty()){
-            auto current = noPrefix.front(); noPrefix.pop();
-            for(const auto& c : suffix[current]){
-                --prefixCout[c];
-                if(prefixCout[c]==0) noPrefix.push(c);
-            }
-            order+=current;
-        }
-
-        return order.size()<prefixCout.size() ? "" : order;
     }
 };
 

@@ -46,49 +46,47 @@ Dijkstra's minimum spanning tree:
 
 */
 #include <array>
-class Solution {
+cclass Solution {
+// singles source shortest path: Dijkstra
 private:
-    constexpr static array<array<int, 2>, 4> DIRECTIONS{{
-        {1, 0},
-        {-1, 0},
-        {0, -1},
-        {0, 1}
+    constexpr static array<pair<int, int>, 4> DIRECTIONS = {{
+        { 1,0},
+        {-1,0},
+        {0, 1},
+        {0,-1}
     }};
+
 public:
     int swimInWater(vector<vector<int>>& grid) {
-        const auto& R=grid.size(); if(R==0) return -1; // invalid input
-        const auto& C=grid[0].size(); if(C==0) return -1; // invalid input
+        const auto R = grid.size();
+        const auto C = grid[0].size();
 
-        // vector<vector<int>> distance(R,vector<int>(C, INT_MAX));
-        // distance[0][0] = 0;
+        vector<vector<int>> min_path(R, vector<int>(C, INT_MAX));
+        using Node = tuple<int, int, int>;
+        priority_queue<Node, vector<Node>, greater<>> minHeap;
 
-        using Cost = int;
-        using Row = int;
-        using Col = int;
-        using Edge = tuple<Cost, Row, Col>;
-        priority_queue<Edge, vector<Edge>, greater<Edge>> frontier;
+        // start from left top corner   
+        minHeap.push({grid[0][0], 0, 0});
 
-        vector<vector<bool>> visited(R, vector<bool>(C, false));
-        
-        
-        visited[0][0]=true;
-        frontier.push({grid[0][0], 0, 0});
-        while(!frontier.empty()){
-            const auto [minCost, r, c] = frontier.top(); frontier.pop();
-            if(r==R-1 && c==C-1) return minCost; // distance = min(distance, minCost)
+        while(!minHeap.empty()){
+            auto [w, r, c] = minHeap.top();minHeap.pop();
+            if(w > min_path[r][c]) continue; // skip I already has smaller
 
-            for(const auto&[dr, dc] : DIRECTIONS){
-                auto newR = r+dr;
-                auto newC = c+dc;
-                if(newR>=0 && newR<R
-                && newC>=0 && newC<C && !visited[newR][newC]){
-                    visited[newR][newC]=true;
-                    frontier.push({max(grid[newR][newC], minCost), newR, newC});
+            for(const auto& [dr, dc] : DIRECTIONS){
+                auto next_r = r+dr;
+                auto next_c = c+dc;
+                if(0<=next_r && next_r < R && 0<=next_c && next_c<C){
+                    auto next_w = max(w, grid[next_r][next_c]);// instead of sum, this is MAX
+                    if(next_w < min_path[next_r][next_c]) {
+                        min_path[next_r][next_c] = next_w;
+                        minHeap.push({next_w, next_r, next_c});
+                    }
                 }
             }
         }
-        //O(n^2 * logn)
-        return -1;
+
+        return min_path[R-1][C-1];
     }
 };
+
 

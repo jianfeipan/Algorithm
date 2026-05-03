@@ -62,54 +62,37 @@ idea:
 
     
 */
-class Solution {
-    //BFS: O(n*k) space O(n+m)
-//SPFA (Shortest Path Faster Algorithm) is essentially a queue-optimized Bellman–Ford.
+class Solution {// max number of stops: BFS:with stops
 public:
     int findCheapestPrice(int n, vector<vector<int>>& flights, int src, int dst, int k) {
-        using Stops=int;
-        using Cost = int;
-        using Node=int;
-        vector<Cost> minCostFromSrc(n, INT_MAX); // this data structure helps to find the current smallest price to decide if we take that node and get a smaller price, then we update this table
-        minCostFromSrc[src] = 0;
-        // grah: adj table or hash map
-        vector<vector<pair<Node, Cost>>> flight_cost(n); // -1 is unreachable
+        vector<vector<pair<int, int>>> tickets(n);
+        for(auto flight : flights) tickets[flight[0]].push_back({flight[1], flight[2]});
 
-        for(const auto & flight : flights){
-            const auto& from = flight[0];
-            const auto& to = flight[1];
-            const auto& cost = flight[2];
-            flight_cost[from].emplace_back(to, cost);
-        }
+        vector<int> min_price(n, INT_MAX);
 
-        queue<tuple<Node, Cost, Stops>> q;
-        q.push({src, 0, 0});
-        /*
-        0 --(1)--> 1 
-          \        |(1)
-           \       v
-            (5)--> 2 --(1)-->3
+        queue<pair<int, int>> bfs;
+        bfs.push({src, 0});
 
-        2 can be resued: so we cannot do the visited to avoid the circle.
-        and we won't have a global level count to stop at k, because stops depends on path
-        not the global level
-        */
-        while( !q.empty() ){ // the stops is not the level of BFS because we may reuse the node
-            const auto& [current, currentCost, currentSteps] = q.front();
-            q.pop();
-            if(currentSteps>k) continue; 
-            // ignore path more than k: 
-            // this is important! we are not using a global level to stop, but depends on k
+        int stops=0;
+        while(!bfs.empty() && stops<= k){
+            const auto level_size = bfs.size();
 
-            for(const auto& [next, cost] : flight_cost[current]){
-                const auto& nextCost = currentCost+cost;
-                if(nextCost < minCostFromSrc[next]) {// will using this next make it shorter?
-                    minCostFromSrc[next] = nextCost;
-                    q.push({next, nextCost, currentSteps+1});
+            for(int i=0; i<level_size; ++i){
+                auto [cur, cost_so_far] = bfs.front(); bfs.pop();
+                min_price[cur] = min(min_price[cur], cost_so_far);
+
+                for(auto [next, price] : tickets[cur]){
+                    auto cost = cost_so_far + price;//!!! here we must stay with cost_so_far, because we limit steps, with this step, this is the best we can do
+                    if(cost < min_price[next]){
+                        min_price[next] = cost;
+                        bfs.push({next, cost});
+                    }
                 }
-            }
-        }
-        return minCostFromSrc[dst]==INT_MAX? -1 : minCostFromSrc[dst] ;
 
+            }
+            ++stops;
+        }
+
+        return min_price[dst]==INT_MAX ? -1 : min_price[dst];
     }
 };
