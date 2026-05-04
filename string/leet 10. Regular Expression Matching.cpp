@@ -21,32 +21,28 @@ idea:
 
 class Solution {
 private:
-    bool dfs(const string& s, const string& p, int i, int j){
-        if(p.size() == j) return s.size() == i;
-        if(s.size() == i){ // s is over
-            if(j+1<p.size() && p[j+1] == '*') // following a *
-                return dfs(s, p, i, j+2); // only .* a* b* left
-        }
+    bool match(int pos_s, int pos_p, const string& s, const string& p){
+        if(pos_p == p.size()) return pos_s == s.size();
 
-        if(s[i] == p[j] || p[j] == '.'){ // match
-            if(j+1<p.size() && p[j+1] == '*'){ // following a *
-                return dfs(s, p, i+1, j)  // skip the current letter try i+1
-                    || dfs(s, p, i, j+2); // skip the .* patern try j+2
+        auto has_star = (pos_p+1 < p.size() && p[pos_p+1] == '*');
+
+        if(has_star) if(match(pos_s, pos_p+2, s, p)) return true; // current match or not, start matches nothing
+
+        if(pos_s < s.size() && (s[pos_s] == p[pos_p] ||  p[pos_p] == '.')){
+            if(has_star){
+                if(match(pos_s+1, pos_p, s, p)) return true;// current match doesn't consume the start
+                if(match(pos_s+1, pos_p+2, s, p)) return true; // current match consumes the start
+            } 
+            else{
+                if(match(pos_s+1, pos_p+1, s, p)) return true;// no start, match consumes the match or '.'
             }
-            return dfs(s, p, i+1, j+1); // no *, single letter match
-        }else{ // miss
-            if(j<p.size()-1 && p[j+1] == '*'){ //  following a *
-                return dfs(s, p, i, j+2); // skip the .*
-            }
-            
-            return false; // no * single letter miss match
         }
-
-
-
+        
+        return false;
     }
 public:
     bool isMatch(string s, string p) {
-        return dfs(s, p, 0, 0);
+        return match(0, 0, s, p);
     }
 };
+

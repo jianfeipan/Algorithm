@@ -57,31 +57,25 @@ idea:
 */
 
 class Solution {
-private:
-    unordered_map<int, int> minCoinForAmount;
-
-    int _coinChange(vector<int>& coins, int amount, int from) {// [2] 3 | 1
-        if(amount==0) return 0;
-        if(amount<0) return -1;
-        if(minCoinForAmount.count(amount)){
-            return minCoinForAmount[amount];
-        }
-        int minCoin = INT_MAX;
-        for(int i=from; i<coins.size(); ++i){
-            if(coins[i] > amount) break;
-            const auto rest = coinChange(coins, amount - coins[i]);
-            if(rest!=-1){
-                minCoin = min(minCoin, rest+1);
-            }
-        }
-        minCoinForAmount[amount] = (minCoin==INT_MAX ? -1 : minCoin);
-        return minCoinForAmount[amount];
-    }
+private: 
+    unordered_map<int, int> memory;
 public:
-    int coinChange(vector<int>& coins, int amount){
-        return _coinChange(coins, amount, 0);
+    int coinChange(vector<int>& coins, int amount) {
+        if(amount == 0) return 0;
+
+        auto& cache = memory[amount];
+        if(cache!=0) return cache; 
+
+        int min_coin = INT_MAX;
+        for(auto coin : coins){
+            if(coin > amount) continue;
+            auto next = coinChange(coins, amount-coin);
+            if(next!=-1) min_coin = min(min_coin, next+1);
+        }
+        return cache  = (min_coin == INT_MAX ? -1 : min_coin);
     }
 };
+
 
 
     

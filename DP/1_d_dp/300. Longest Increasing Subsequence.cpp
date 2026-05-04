@@ -69,29 +69,22 @@ public:
     }
 };
 
+// pure recursion 
 class Solution {
-/*
-maintain a vector, with only incresing order, extend it, and the len will be max
+private:
+    int longest_from(int from, int last_taken, const vector<int>& nums){
+        if(from == nums.size()) return 0;
+        if(last_taken != -1 && nums[last_taken] >= nums[from]) return 0;
+        
+        // take current or skip current
+        return max(
+            1 + longest_from(from+1, from, nums),
+            longest_from(from+1, last_taken, nums)
+        );
+    }
 
- */
 public:
     int lengthOfLIS(vector<int>& nums) {
-        vector<int> incresing;
-        incresing.push_back(nums[0]);
-        for(int i=1; i<nums.size();++i){
-            if(incresing.back()<nums[i]){
-                incresing.push_back(nums[i]);
-            }else{
-                int toRepalce = lower_bound(
-                                incresing.begin(),
-                                incresing.end(), 
-                                nums[i]) - incresing.begin();
-                incresing[toRepalce] = nums[i];
-                // if this number is smaller, we replace the first element larger than this, 
-                // it allows us to update the subsequence, if later this smaller element could contribute to a longer subsequence
-            }
-        }
-
-        return incresing.size();
+        return longest_from(0, -1, nums);
     }
 };

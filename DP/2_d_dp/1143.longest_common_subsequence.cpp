@@ -46,35 +46,22 @@ idea:
 
 
 */
-
 class Solution {
 private:
-    int _subsequenceLenth(const string& s1, const string& s2, 
-                          int s1Idx, int s2Idx, vector<vector<int>>& dp){
-        if(s1Idx==s1.size() || s2Idx==s2.size()){
-            return 0;
-        }
+    vector<vector<int>> memory;
 
-        auto& cache = dp[s1Idx][s2Idx];
-        if(cache!=-1){
-            return cache;
-        }
+    int dfs(const string& s1, const string& s2, int index1, int index2){
+        if(index1 == s1.size() || index2 == s2.size()) return 0;
 
-        if(s1[s1Idx] == s2[s2Idx])
-            return  cache = (1+ _subsequenceLenth(s1, s2, s1Idx+1, s2Idx+1, dp));
+        auto& cache = memory[index1][index2];
+        if(cache != -1) return cache;
 
-        return cache = max(
-            _subsequenceLenth(s1, s2, s1Idx+1, s2Idx, dp),
-            _subsequenceLenth(s1, s2, s1Idx, s2Idx+1, dp)
-        );
+        if(s1[index1] == s2[index2]) return cache=(1 + dfs(s1, s2, index1+1, index2+1));
+        else return cache = max(dfs(s1, s2, index1+1, index2), dfs(s1, s2, index1, index2+1));
     }
-
 public:
     int longestCommonSubsequence(string text1, string text2) {
-        const auto& len1 = text1.size();
-        const auto& len2 = text2.size();
-        vector<vector<int>> dp(len1, vector<int>(len2, -1));
-
-        return _subsequenceLenth(text1, text2, 0, 0, dp);
+        memory = vector<vector<int>>(text1.size(), vector<int>(text2.size(), -1));
+        return dfs(text1, text2, 0, 0);
     }
 };

@@ -38,22 +38,18 @@ idea:
         O(m*n)
 */
 private:
-    int _paths(int m, int n, vector<vector<int>>& cache){
-        if(m==0 && n==0){
-            return 1;
-        }
-        if(m<0 || n<0){
-            return 0;
-        }
-        if(cache[m][n]!=-1){
-            return cache[m][n];
-        }
-        return cache[m][n]=(_paths(m-1, n, cache) + _paths(m, n-1, cache));
+    int dfs(int m, int n, vector<vector<int>>& cache){
+        if(m==0 && n==0)return 1; 
+        if(m<0 || n<0) return 0;
+
+        if(cache[m][n]!=-1) return cache[m][n]; 
+
+        return cache[m][n]=(dfs(m-1, n, cache) + dfs(m, n-1, cache));
     }
 
 public:
     int uniquePaths(int m, int n) {
-        vector<vector<int>> cache(m+1, vector<int>(n+1, -1));
-        return _paths(m-1, n-1, cache);
+        vector<vector<int>> cache(m, vector<int>(n, -1));
+        return dfs(m-1, n-1, cache);
     }
 };

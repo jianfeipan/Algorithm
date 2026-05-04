@@ -56,33 +56,30 @@ ideas:
 
 */
 class Solution {
-private: 
-    int _numDecodings(const string& s, 
-                      int from, 
-                      vector<int>& cache){
-        if(from>=s.size()) return 1;
+private:
+    vector<int> memory;
+    int dfs(int from, const string& s){
+        if(from == s.size()) return 1;
 
-        if(cache[from]!=-1) return cache[from];
+        auto& cache = memory[from];
+        if(cache != -1) return cache;
 
-        if(s[from] == '0'){
-            cache[from] = 0;
-            return 0;
+        auto cur = s[from];
+        if(cur == '0') return 0;
+
+        auto count = dfs(from + 1, s);// take cur as single
+
+        if(from+1<s.size()){ // possible to take two
+            if(cur == '1')  count+=dfs(from+2, s);
+            else if(cur = '2' && s[from+1] <= '6') count+= dfs(from + 2, s);
         }
-        int takeOne = _numDecodings(s, from+1, cache);
 
-        int takeTwo = 0;
-        if(from<s.size()-1){
-            if(s[from] == '1'
-            || (s[from] == '2' && s[from+1] < '7')){
-                takeTwo =_numDecodings(s, from+2, cache);
-            }
-        }
-        cache[from] = takeOne + takeTwo;
-        return cache[from];
+        return cache = count;
+        
     }
 public:
     int numDecodings(string s) {
-        vector<int> cache(s.size(), -1);
-        return  _numDecodings(s, 0, cache);
+        memory = vector<int>(s.size(), -1);
+        return dfs(0, s);
     }
 };

@@ -41,37 +41,28 @@ So we already have the DP solution for no circle, which mean n-1 and 0 are indep
 */
 class Solution {
 private:
-    int _rob_no_circle(const vector<int>& nums, int from, int to){
-        // if no circle
-        if(from == to) return nums[from];
-        const auto& n = nums.size();
-        vector<int> take(n, 0); // max if take current i
-        vector<int> skip(n, 0); // max if skip current i
+    vector<int> memory;
+    int rob_from(int cur, const vector<int>& nums){
+        if(cur >= nums.size()) return 0;
 
-        take[from] = nums[from];
-
-        for(int i=1; i<=to; ++i){
-            // if take current i-1 must skip
-            take[i] = skip[i-1]+nums[i];
-            // if skip current, i-1 could be skipped or taken
-            skip[i] = max(skip[i-1], take[i-1]);
-        }
-
-        return max(take[to], skip[to]);
+        auto& cache = memory[cur];
+        if(cache!=-1) return cache;
+        return cache = max(
+            rob_from(cur+2, nums) + nums[cur],  // rob current
+            rob_from(cur+1, nums) + 0); // skip current
     }
 public:
     int rob(vector<int>& nums) {
-        const auto& n = nums.size();
-        if(n==1) return nums[0];
+        if(nums.size() == 1) return nums.at(0);
 
-        // with circle, 0 and n-1 cannot be robed at the same time:
-        // skip 0: 
-        const auto skipFirstMax = _rob_no_circle(nums, 1, n-1);
+        memory = vector<int>(nums.size(), -1);
+        auto skip_0 = rob_from(1, nums);
 
-        // skip: n-1
-        const auto skipLastMax = _rob_no_circle(nums, 0, n-2);
-
-        return max(skipFirstMax, skipLastMax);
-
+        // if we don't want to skip 0, then the last we don't take:
+        memory = vector<int>(nums.size(), -1); // !!! reset memory!!
+        nums.back()= 0;//!!! 
+        auto rob_0 = rob_from(0, nums);
+        return max(rob_0, skip_0);
     }
 };
+

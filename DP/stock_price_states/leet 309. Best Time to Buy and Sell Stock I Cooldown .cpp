@@ -157,30 +157,27 @@ Bottom-up
  W   0   0
 
  */
-class Solution{
 
+class Solution {
 public:
     int maxProfit(vector<int>& prices) {
-        const auto n = prices.size();
-        vector<int> buy(n);
-        vector<int> sell(n);
-        vector<int> hold(n);
-        vector<int> wait(n);
+        // first day initialization
+        int hold_cash = 0; 
+        int hold_stock = -prices[0];
+        int cool_down = -INT_MIN;
 
-        buy[0] = -prices[0];
-        sell[0] = INT_MIN; // no possible on day 0
-        hold[0] = INT_MIN; // no possible on day 0
-        wait[0] = 0;
-        for(int i=1; i<n; ++i){
-            buy[i] = wait[i-1] - prices[i];
-            sell[i] = max(buy[i-1], hold[i-1])+prices[i];
-            hold[i] = max(buy[i-1], hold[i-1]);
-            wait[i] = max(sell[i-1], wait[i-1]);
+        for(int t=1; t<prices.size(); ++t){
+            int prev_cash = hold_cash;
+            int prev_stock = hold_stock;
+            int prev_cool = cool_down;
+
+            hold_cash = max(prev_cash, prev_cool);
+            hold_stock = max(prev_stock, prev_cash - prices[t]);
+            cool_down = prev_stock + prices[t];
         }
 
-        return max(sell[n-1], wait[n-1]);
+        return max(hold_cash, cool_down);
     }
-
 };
 
 

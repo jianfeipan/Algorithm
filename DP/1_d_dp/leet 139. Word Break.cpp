@@ -51,34 +51,29 @@ space:
 */
 class Solution {
 private:
-    bool _wordBreak(const string s, 
-                    const unordered_set<string>& wordDict,
-                    int from,
-                    vector<int>& cache, 
-                    int wordMaxLen){
-        if(from == s.size()) return true; // reach the end of string, we find one way
-        
-        if(cache[from]!=-1) return cache[from];
-        for(int j = from; j<s.size() && j-from+1<=wordMaxLen; ++j){
-            if(wordDict.contains(s.substr(from, j-from+1))){
-                if(_wordBreak(s, wordDict, j+1, cache, wordMaxLen)) {
-                    cache[from]=true;
-                    return true;
-                }
-            }
+    vector<int> memory;
+    size_t max_word_len;
+
+    bool dfs(int from, const string& s, const unordered_set<string>& words){
+        if(from == s.size()) return true;
+
+        auto& cache = memory[from];
+        if(cache!=-1) return cache;
+
+        for(int len = 1; len+from <= s.size() && len <=max_word_len; ++len){
+            if(words.count(s.substr(from, len)) && dfs(from+len, s, words)) return cache = true;
         }
-        cache[from]=false;
-        return false;
+        return cache = false;
     }
 
 public:
     bool wordBreak(string s, vector<string>& wordDict) {
-        unordered_set<string> dict{wordDict.begin(), wordDict.end()};
-        vector<int> cache(s.size(), -1);
-        size_t wordMaxLen = 0;
-        for(const auto& word:wordDict){
-            wordMaxLen=max(wordMaxLen, word.size());
-        }
-        return _wordBreak(s, dict, 0, cache, wordMaxLen);
+        memory = vector<int>(s.size(), -1);
+        max_word_len = 0;
+        for(const auto& word:wordDict) max_word_len = max(max_word_len, word.size());
+
+        unordered_set<string> words(wordDict.begin(), wordDict.end());
+        return dfs(0, s, words);
     }
 };
+

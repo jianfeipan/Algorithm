@@ -50,53 +50,38 @@ using namespace std;
 
 class Solution_devide_conquer {
 public:
-    // Helper function to find the maximum sum that crosses the midpoint
-    int maxCrossingSum(vector<int>& nums, int left, int mid, int right) {
-        int sum = 0;
-        int left_sum = INT_MIN;
-
-        // Include elements from mid down to left
-        for (int i = mid; i >= left; i--) {
-            sum += nums[i];
-            if (sum > left_sum)
-                left_sum = sum;
-        }
-
-        sum = 0;
-        int right_sum = INT_MIN;
-
-        // Include elements from mid+1 up to right
-        for (int i = mid + 1; i <= right; i++) {
-            sum += nums[i];
-            if (sum > right_sum)
-                right_sum = sum;
-        }
-
-        // Return sum of elements on left and right of mid
-        return left_sum + right_sum;
-    }
-
-    int solve(vector<int>& nums, int left, int right) {
-        // Base Case: Only one element
-        if (left == right) {
-            return nums[left];
-        }
-
-        int mid = left + (right - left) / 2;
-
-        // Return the maximum of:
-        // 1. Max subarray sum in left half
-        // 2. Max subarray sum in right half
-        // 3. Max subarray sum crossing the midpoint
-        return max({
-            solve(nums, left, mid),
-            solve(nums, mid + 1, right),
-            maxCrossingSum(nums, left, mid, right)
-        });
-    }
-
     int maxSubArray(vector<int>& nums) {
-        return solve(nums, 0, nums.size() - 1);
+        return dfs(nums, 0, nums.size() - 1);
+    }
+
+private:
+    int dfs(vector<int>& nums, int l, int r) {
+        if (l > r) return INT_MIN;
+
+        int m = (l + r) >> 1;
+        // try to find the max sum including middle
+        int max_sum_left = 0;
+        {// from m, extend to left
+            int sum = 0;
+            for (int i = m - 1; i >= l; --i) {
+                sum += nums[i];
+                max_sum_left = max(max_sum_left, sum);
+            }
+        }
+        int max_sum_right = 0;
+        {// from m, extend to left
+            int sum = 0;
+            for (int i = m + 1; i <= r; ++i) {
+                sum += nums[i];
+                max_sum_right = max(max_sum_right, sum);
+            }
+        }
+
+        
+        
+        return max(dfs(nums, l, m - 1),// max live on the left 
+                   max(dfs(nums, m + 1, r), // max live on the right 
+                       max_sum_left + nums[m] + max_sum_right));// max live cross the m 
     }
 };
 

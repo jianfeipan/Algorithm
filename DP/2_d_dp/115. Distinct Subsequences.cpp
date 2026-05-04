@@ -21,36 +21,27 @@ Output: 5
 
 class Solution {
 private:
-    int dfs(const string& s,
-            const string& t,
-            int i, int j, 
-            vector<vector<int>>& memory){
-
-        if(j==t.size()) return 1;
-        if(i==s.size()) return 0; // s used up, but t still left letters
+    vector<vector<int>> memory;
+    int match_from(int i, int j, const string& s, const string& t){
+        if(j == t.size()) return 1;
+        if(i == s.size()) return 0;
 
         auto& cache = memory[i][j];
-        if(cache!=-1) return cache;
+        if(cache != -1) return cache;
 
-        int solutions=0;
-        if(s[i] == t[j]){
-            solutions += dfs(s,t, i+1, j+1, memory);
-        }
-        solutions += dfs(s,t, i+1, j, memory);
-        return cache = solutions;
+        int match = match_from(i+1, j, s, t);
+        if(s[i] == t[j]) match += match_from(i+1, j+1, s, t);
+
+        return cache = match;
+
     }
 public:
     int numDistinct(string s, string t) {
-        if(t.empty()) return 1;
-        if(s.empty()) return 0;
-
-        vector<vector<int>> memory(s.size(), vector<int>(t.size(), -1));
-
-        return dfs(s, t, 0, 0, memory);
-        // without memory: O(2^n) evert letter can be take or not
-        // with memory: O(m*n) space O(m*n)
+        memory = vector<vector<int>>(s.size(), vector<int>(t.size(), -1));
+        return match_from(0, 0, s, t);
     }
 };
+
 
 
 int main() {

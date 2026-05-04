@@ -37,25 +37,24 @@ idea:
 */
 class Solution {
 private:
-    int dfs(const vector<int>& nums, 
-            int from, int target, 
-            unordered_map<int, int>& memory){
-        if(from==nums.size()) return target == 0;
-        
-        //1 <= nums.length <= 20
-        int key = from + 100 * target;
-        if(memory.count(key)){
-            return memory[key];
-        }
+    unordered_map<int, int> memory;
+    int dfs(int cur, const vector<int>& nums, int target){
+        if(cur == nums.size() && target == 0) return 1;
+        if(cur == nums.size()) return 0;
 
-        const auto& current = nums[from];
-        return memory[key] = (
-                dfs(nums, from+1, target+current, memory) 
-             +  dfs(nums, from+1, target-current, memory)); 
+        //1 <= nums.length <= 20
+        auto key = target*100 + cur;
+        auto it = memory.find(key);
+        if(it!=memory.end()) return it->second;
+
+        return memory[key]= 
+               dfs(cur +1, nums, target + nums[cur]) 
+             + dfs(cur +1, nums, target - nums[cur]);
     }
 public:
     int findTargetSumWays(vector<int>& nums, int target) {
-        unordered_map<int, int> memory;
-        return dfs(nums, 0, target, memory);
+        memory.clear();
+        return dfs(0, nums, target);
     }
 };
+

@@ -27,7 +27,7 @@ idaes:
 */
 
 
-class Solution_recursive {
+class Solution_recursive_BF {
 public:
     int maxCoins(vector<int>& nums) {
         if(nums.size() == 1) return nums[0];
@@ -48,29 +48,33 @@ public:
 
 // !!!!!!!the key is still the range: 
 // here we need to take another way to think: 
-// if the last left ballon is k  in [l,r], so the coin is k*(l-1)*(r+1)
-// next dfs will be [l,k-1] + [k+1, r]
+// if the last left ballon is k  in [l,r], so the coin is k*(l)*(r)
+
+
 class Solution {
+private:
+    int max_score_end_with(int l, int r, const vector<int>& score){
+        if(l+1 >= r) return 0; // no ballon to shoot
+        int max_score = 0;
+        for(int i = l+1; i<r; ++i){
+            auto current_shoot = score[l]*score[i]*score[r];
+            max_score = max(max_score, 
+                            current_shoot 
+                            + max_score_end_with(l, i, score) 
+                            + max_score_end_with(i, r, score));
+        }
+
+        return max_score;
+    }
 public:
     int maxCoins(vector<int>& nums) {
-        auto filled = nums;
-        filled.insert(filled.begin(), 1);
-        filled.push_back(1);
+        vector<int> extended(nums.size()+2, 1);
+        for(int i=0; i<nums.size(); ++i) extended[i+1] = nums[i];
+        // [4,2,3,7]  --> [1, 4,2,3,7, 1]
 
-        return dfs(filled, 1, filled.size()-2);
-    }
+        return max_score_end_with(0, extended.size()-1, extended);
 
-    int dfs(vector<int>& nums, int l, int r) {
-        if (l > r) return 0;
-
-        int maxCoin = 0;
-        for (int i = l; i <= r; i++) {
-            // if i is the last left ballon, then it's left will be l-1 and right will be r+1
-            int current = nums[l - 1] * nums[i] * nums[r + 1];
-            maxCoin = max(maxCoin, current 
-                            + dfs(nums, l, i - 1) 
-                            + dfs(nums, i + 1, r));
-        }
-        return maxCoin;
+        
     }
 };
+

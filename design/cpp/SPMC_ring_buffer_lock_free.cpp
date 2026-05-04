@@ -79,6 +79,69 @@ private:
  *    (simpler but slower under high contention).
  */
 
+
+template<typename T, size_t Capacity = 1024>
+class LFQueue{
+    // & (1 cycle) much faster than % (loop)
+    // 100000 & 011111 -> Capacity - 1 will be the mask
+    static assert(Capacity & (Capacity-1) == 0, "capacity must be a power of 2");
+
+public:
+    LFQueue()
+    : m_buffer(new T[Capacity])
+    , m_mask(Capacity-1)
+    , m_head()
+    , m_tial()
+    {}
+
+    ~LFQueue(){delete[] m_buffer;}
+
+    // no copy
+    LFQueue(const LFQueue&) = delete;
+    LFQueue& operator=(const LFQueue&) = delete;
+
+    optional<T>  pop(){
+        // called only by consumer, only write/read head: concurrency to read tail
+        auto current = m_head.load(memory_order_relaxed);
+
+        auto tail = m_tail.load(memory_order_aquire);
+        // when proucer is writing, i need my read (next lines) after this aquire instruction
+        if(current == tail) return nullopt;
+
+        T data = m_buffer[current];// copy here!
+
+        auto nextHead = (current + 1) & m_mask;
+        // make sure the release after the change instructions
+        // publisher will have concurreny on it
+        m_head.sore(nextHead, memory_order_release);
+        return data;
+    }
+
+    bool push(T&& val){
+        // producer is w/r the tail, no concurency
+        auto current = m_tail.load(memory_order_relaxed);
+        auto nextTail = (current + 1) & m_mask;
+        // producer has concurrency with consumer on reading head,
+        // we aquire here to make sure my read is after producer's modification & release
+        auto head = m_head.load(memory_order_aquire);
+
+        if(nextTail == head) return false; // queue full
+
+        m_buffer[nextTail] = move(val);
+        // make sure to writ data instruction then release
+        // so producer can have the newest data
+        m_tail.store(expected, memory_order_release);
+        return true;
+    }
+
+private:
+    T* m_buffer; // 8B
+    const size_t m_mask; //8B
+    alignas(64) atomic<size_t> m_head; // 8B false share
+    alignas(64) atomic<size_t> m_tail; // 8B
+}
+
+
 // ─── demo / basic tests ───
 int main() {
     RingBuffer rb(3);
