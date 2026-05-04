@@ -80,66 +80,109 @@ private:
  */
 
 
-template<typename T, size_t Capacity = 1024>
-class LFQueue{
-    // & (1 cycle) much faster than % (loop)
-    // 100000 & 011111 -> Capacity - 1 will be the mask
-    static assert(Capacity & (Capacity-1) == 0, "capacity must be a power of 2");
+#include <atomic>
+#include <optional>
+#include <cstddef>
+#include <memory>      // construct_at, destroy_at
+#include <type_traits>
+
+template <typename T, size_t Capacity>
+class SPMCQueue {
+    static_assert(Capacity >= 2, "Capacity must be >= 2");
+    static_assert((Capacity & (Capacity - 1)) == 0,
+                  "Capacity must be a power of 2");
 
 public:
-    LFQueue()
-    : m_buffer(new T[Capacity])
-    , m_mask(Capacity-1)
-    , m_head()
-    , m_tial()
-    {}
+    SPMCQueue() = default;
 
-    ~LFQueue(){delete[] m_buffer;}
+    ~SPMCQueue() {
+        // ⚠️ 假设此时没有并发访问
+        size_t tail = tail_.load(std::memory_order_relaxed);
+        size_t head = head_.load(std::memory_order_relaxed);
 
-    // no copy
-    LFQueue(const LFQueue&) = delete;
-    LFQueue& operator=(const LFQueue&) = delete;
-
-    optional<T>  pop(){
-        // called only by consumer, only write/read head: concurrency to read tail
-        auto current = m_head.load(memory_order_relaxed);
-
-        auto tail = m_tail.load(memory_order_aquire);
-        // when proucer is writing, i need my read (next lines) after this aquire instruction
-        if(current == tail) return nullopt;
-
-        T data = m_buffer[current];// copy here!
-
-        auto nextHead = (current + 1) & m_mask;
-        // make sure the release after the change instructions
-        // publisher will have concurreny on it
-        m_head.sore(nextHead, memory_order_release);
-        return data;
+        for (size_t i = tail; i < head; ++i) {
+            auto* ptr = ptr_at(i);
+            std::destroy_at(ptr);
+        }
     }
 
-    bool push(T&& val){
-        // producer is w/r the tail, no concurency
-        auto current = m_tail.load(memory_order_relaxed);
-        auto nextTail = (current + 1) & m_mask;
-        // producer has concurrency with consumer on reading head,
-        // we aquire here to make sure my read is after producer's modification & release
-        auto head = m_head.load(memory_order_aquire);
+    // 禁止拷贝（典型 lock-free 结构）
+    SPMCQueue(const SPMCQueue&) = delete;
+    SPMCQueue& operator=(const SPMCQueue&) = delete;
 
-        if(nextTail == head) return false; // queue full
+    // 允许移动（可选）
+    SPMCQueue(SPMCQueue&&) = delete;
+    SPMCQueue& operator=(SPMCQueue&&) = delete;
 
-        m_buffer[nextTail] = move(val);
-        // make sure to writ data instruction then release
-        // so producer can have the newest data
-        m_tail.store(expected, memory_order_release);
+    // ---------------------------
+    // Single Producer
+    // ---------------------------
+    template <typename... Args>
+    bool enqueue(Args&&... args) {
+        size_t head = head_.load(std::memory_order_relaxed);
+        size_t next = head + 1;
+
+        if (next - tail_.load(std::memory_order_acquire) > Capacity) { 
+            // tail_， head_只在读取元素的时候才&mask， 否则 next == tail 无法判定是空还是满
+            // 他们都是size_t:  这使得即使溢出了也是回到0, 还是符合逻辑的。
+            return false; // full
+        }
+
+        auto* ptr = ptr_at(head);
+        std::construct_at(ptr, std::forward<Args>(args)...);
+
+        head_.store(next, std::memory_order_release);
         return true;
     }
 
+    // ---------------------------
+    // Multiple Consumers
+    // ---------------------------
+    std::optional<T> dequeue() {
+        size_t tail;
+
+        while (true) {
+            tail = tail_.load(std::memory_order_relaxed);
+            size_t head = head_.load(std::memory_order_acquire);
+
+            if (tail >= head) {
+                return std::nullopt; // empty
+            }
+
+            if (tail_.compare_exchange_weak(
+                    tail,
+                    tail + 1,
+                    std::memory_order_acq_rel,
+                    std::memory_order_relaxed)) {
+                break;
+            }
+        }
+
+        auto* ptr = ptr_at(tail);
+
+        T value = std::move(*ptr);
+        std::destroy_at(ptr);
+
+        return value;
+    }
+
 private:
-    T* m_buffer; // 8B
-    const size_t m_mask; //8B
-    alignas(64) atomic<size_t> m_head; // 8B false share
-    alignas(64) atomic<size_t> m_tail; // 8B
-}
+    using Storage = std::aligned_storage_t<sizeof(T), alignof(T)>;
+
+    static constexpr size_t mask_ = Capacity - 1;
+
+    // 避免 false sharing
+    alignas(64) std::atomic<size_t> head_{0};
+    alignas(64) std::atomic<size_t> tail_{0};
+
+    Storage buffer_[Capacity];
+
+    // 统一取指针（带 launder 更严谨）
+    T* ptr_at(size_t index) {
+        void* slot = &buffer_[index & mask_];
+        return std::launder(reinterpret_cast<T*>(slot));
+    }
+};
 
 
 // ─── demo / basic tests ───

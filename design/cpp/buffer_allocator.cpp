@@ -110,7 +110,6 @@ int main() {
         int* a = static_cast<int*>(arena.allocate(sizeof(int)));
         *a = 42;   
 
-
         ArenaAllocator<int> alloc(arena);
         std::vector<int, ArenaAllocator<int>> v(alloc);
 
@@ -123,16 +122,6 @@ int main() {
         //std::byte stack_buffer[1024];
 
         BufferAllocator arena(stack_buffer, sizeof(stack_buffer));
-
-        int* a = static_cast<int*>(arena.allocate(sizeof(int)));
-        *a = 42;
-
-        double* b = static_cast<double*>(arena.allocate(sizeof(double)));
-        *b = 3.14;
-
-        std::cout << *a << " " << *b << "\n";
-
-        arena.reset(); // reuse stack buffer
 
         ArenaAllocator<int> alloc(arena);
         std::vector<int, ArenaAllocator<int>> v(alloc);
@@ -156,20 +145,11 @@ int main() {
             std::make_unique<std::byte[]>(size);
 
         BufferAllocator arena(heap_buffer.get(), size);
-
-        int* a = static_cast<int*>(arena.allocate(sizeof(int)));
-        *a = 123;
-
-        double* b = static_cast<double*>(arena.allocate(sizeof(double)));
-        *b = 3.14;
-
-        std::cout << *a << " " << *b << "\n";
-
-        // 不需要 delete[]，unique_ptr 自动释放
-
+        
         ArenaAllocator<int> alloc(arena);
         std::vector<int, ArenaAllocator<int>> v(alloc);
-
+        
         v.push_back(1);
+        // 不需要 delete[]，unique_ptr 自动释放
     }
 }
