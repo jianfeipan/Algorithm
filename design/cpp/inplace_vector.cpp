@@ -9,7 +9,10 @@ namespace my {
 template <typename T, std::size_t Capacity>
 class inplace_vector {
 private:
-    alignas(T) char _data[Capacity * sizeof(T)];
+    struct Storage {
+        alignas(alignof(T)) std::byte data[sizeof(T)];
+    };
+    alignas(T) Storage _data[Capacity];
     std::size_t _size = 0;
 
     T* data_ptr() { return reinterpret_cast<T*>(_data); }
@@ -43,7 +46,7 @@ public:
     const T* begin() const { return reinterpret_cast<const T*>(_data); }
     const T* end() const { return reinterpret_cast<const T*>(_data) + _size; }
 };
-} // namespace my
+} // namespace 
 
 class Widget {
   int _val = 0;
