@@ -3,11 +3,9 @@
 #include <cstddef>
 #include <memory>
 
-template <typename T, size_t Capacity>
+template <typename T, size_t Capacity = 1024>
 class SPSCQueue {
-    static_assert(Capacity >= 2, "Capacity must be >= 2");
-    static_assert((Capacity & (Capacity - 1)) == 0,
-                  "Capacity must be power of 2");
+    static_assert((Capacity & (Capacity - 1)) == 0, "Capacity must be power of 2");
 
 public:
     SPSCQueue() = default;
@@ -57,7 +55,9 @@ public:
     }
 
 private:
-    using Storage = std::aligned_storage_t<sizeof(T), alignof(T)>;
+    struct Storage {
+        alignas(alignof(T)) std::byte data[sizeof(T)];
+    };
 
     static constexpr size_t mask_ = Capacity - 1;
 
