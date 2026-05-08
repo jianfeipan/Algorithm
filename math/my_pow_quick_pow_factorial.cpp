@@ -1,4 +1,3 @@
-        if(n==0) return 1;
 class Solution {
 public:
     double myPow(double x, int n) {

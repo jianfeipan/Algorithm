@@ -51,39 +51,41 @@ using namespace std;
 class Solution {
 public:
     int leastInterval(vector<char>& tasks, int n) {
-        unordered_map<char, int> freq;
-        for(auto t : tasks) ++freq[t];
+        // always prioritize the taks with hight frequence
+        array<int, 26> freq{};
+        for(auto task : tasks) ++freq[task - 'A'];
 
-        // take the most frequent 
-        priority_queue<int> to_process;
-        for(const auto& [_, f]:freq) to_process.push(f);
+        // most frequent tasks-> maxHeap
+        using Freq = int;
+        using Task = pair<Freq, char>;
+        priority_queue<Task> to_process; 
 
-        // cool down task: time_freq
-        using TimeFreq = pair<int, int>;
-        queue<TimeFreq> cool_down;
+        // earlise can be processed : a normal queue is ok! we push it with time order, if cool down time is not the same, t+n[i] , this we need a minHeap
+        using EndCooling = int;
+        using CoolingTask = pair<EndCooling, Task>;
+        queue<CoolingTask> cool_down;
+
+        for(int i=0; i<26; ++i) if(freq[i]>0) to_process.push({freq[i], 'A'+i});
 
         int t = 0;
         while(!to_process.empty() || !cool_down.empty()){
-            ++t;
-            if(!to_process.empty()){
-                
-                auto most_freq = to_process.top(); to_process.pop();
-                // the rest of the same task should be process at t+n
-                if(most_freq>1) cool_down.push({t+n, most_freq-1});
-            } else {
-                auto [earlist, _] = cool_down.front();
-                t = earlist;
+            //check cool_down queue, and bring tasks back to to_process queue if they are cooled down
+            while( !cool_down.empty() && cool_down.front().first < t ){
+                to_process.push(cool_down.front().second); cool_down.pop();
             }
 
-            if(!cool_down.empty()){
-                auto [earlist, freq] = cool_down.front();
-                if(t>=earlist){
-                    cool_down.pop();
-                    to_process.push(freq);
-                } 
+            //take task from to_process, process it, put it to cool down queue
+            if(!to_process.empty()){
+                auto task = to_process.top(); to_process.pop();
+                --task.first;
+                if(task.first>0) cool_down.push( {t+n, task} ); // if tasks still have freq
+                ++t;
+            }else{
+                
+                t = max(t+1, cool_down.front().first);
             }
         }
-        
         return t;
     }
 };
+
