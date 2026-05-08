@@ -32,24 +32,21 @@ Output: 1
  *     }
  * }
  */
-
-class Solution {
+class Solution {// sweapline
 public:
     int minMeetingRooms(vector<Interval>& intervals) {
-        using Time = int;
-        map<Time, int> roomRequests;
-        
-        for(auto& interval : intervals){
-            ++roomRequests[interval.start];
-            --roomRequests[interval.end];
+        map<int, int> use_room;
+        for(const auto& interval : intervals){
+            use_room[interval.start] += 1; // take room
+            use_room[interval.end] -= 1; // release room
         }
 
-        int maxRoom = 0;
-        int currentRoom = 0;
-        for(auto& [t, room] : roomRequests){
-            currentRoom+=room;
-            maxRoom = max(maxRoom, currentRoom);
+        int room = 0;
+        int max_room = 0;
+        for(const auto& [_, use] : use_room){
+            room+=use;
+            max_room = max(max_room, room);
         }
-        return maxRoom;
+        return max_room;
     }
 };

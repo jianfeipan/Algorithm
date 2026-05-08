@@ -90,3 +90,27 @@ public:
 
 };
 
+// greedty: sort by end time, always keep the interval that ends earliest
+class Solution {
+public:
+    int eraseOverlapIntervals(vector<vector<int>>& intervals) {
+        // greedy: When two intervals overlap, 
+        // keeping the one with the smaller end time
+        // leaves more room for future intervals
+        sort(intervals.begin(), intervals.end());
+        int erased = 0;
+        int cur = 0;
+        for(int next=1; next<intervals.size(); ++next){
+            if( intervals[next][0] < intervals[cur][1] ){
+                // overlapping
+                ++erased;
+                // remove the one with later end: keep more space
+                if(intervals[next][1] < intervals[cur][1]) cur = next;// cur is removed, replaced by next
+                // else: pass: next is removed keep the cur one}  
+            }
+        }
+        return erased;
+    }
+};
+
+

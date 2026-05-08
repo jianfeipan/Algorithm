@@ -4,55 +4,6 @@
 #include <cassert>
 using namespace std;
 
-class Solution_sort_and_minHeap {
-public:
-    vector<int> minInterval(vector<vector<int>>& intervals, vector<int>& queries) {
-        // sort intervals
-        sort(intervals.begin(), intervals.end());
-
-        // sort queries
-        const auto n = queries.size();
-        vector<int> sortedQuery(n);
-        for(int i=0; i<n; ++i) sortedQuery[i] = i;
-        sort(sortedQuery.begin(), sortedQuery.end(), [&](int idx1, int idx2){
-            return queries[idx1] < queries[idx2];
-        });
-
-        vector<int> ans(n);
-
-        using Len = int;
-        using End = int;
-        using Node = pair<Len, End>;
-        using MinHeap = priority_queue<Node, vector<Node>, greater<Node>>;
-        MinHeap minIntervals;
-
-        auto intervalIt = intervals.begin();
-
-        for(auto qIdx : sortedQuery){
-            auto query = queries[qIdx];
-            int minimalInterval = -1;
-            {
-                // push intervals start before the query into a miinHeap on len and end date
-                while(intervalIt!=intervals.end() && intervalIt->at(0) <= query){
-                    const auto len = intervalIt->at(1) - intervalIt->at(0) + 1; // [l,r] inclusive
-                    minIntervals.push({len, intervalIt->at(1)});
-                    ++intervalIt;
-                }
-
-                // pop intervals end bfore the query
-                while(!minIntervals.empty() && minIntervals.top().second < query){
-                    minIntervals.pop();
-                }
-                if(!minIntervals.empty()) minimalInterval = minIntervals.top().first;
-            }
-            ans[qIdx] = minimalInterval;
-        }
-
-        return ans;
-
-    }
-};
-
 class Solution {
 private:
     class SegementTree{

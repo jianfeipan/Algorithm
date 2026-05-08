@@ -1,21 +1,24 @@
+        if(n==0) return 1;
 class Solution {
 public:
     double myPow(double x, int n) {
-        if(n==0) return 1;
-        //If x = 0, then n will be positive.
-        if(n<0) {
-            if(x == 0) return 0; // exception invalid input
-            x = 1.0/x; 
-            n *= -1;
+        if (x == 0) return 0;
+        if (n == 0) return 1;
+
+        double res = 1;
+        long power = abs((long)n);
+
+        while (power) {
+            if (power & 1) {
+                res *= x;
+            }
+            x *= x;
+            power >>= 1;
         }
-        double res=1.0;
-        for(int i = 0; i < n; ++i){
-            res*=x;
-        }
-        return res;
+
+        return n >= 0 ? res : 1 / res;
     }
 };
-
 
 /*
 Pow(x, n)

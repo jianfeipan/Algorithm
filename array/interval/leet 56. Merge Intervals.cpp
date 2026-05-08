@@ -35,15 +35,18 @@ public:
     vector<vector<int>> merge(vector<vector<int>>& intervals) {
         sort(intervals.begin(), intervals.end());
 
-        vector<vector<int>> merged; 
-        for(const auto& interval : intervals){
-            if(merged.empty() || merged.back()[1] < interval[0]){ // first or no overlapping
-                merged.push_back(interval);
-            }else{
-                merged.back()[1] = max(merged.back()[1], interval[1]); // extend the tail's end
+        vector<vector<int>> merged{ intervals.front() };
+        for(int i=1; i<intervals.size(); ++i){
+            auto& last = merged.back();
+            auto cur = intervals.at(i);
+            // assert(last[0] <= cur[0]);
+            if(cur[0] <= last[1]){ // [ ( ] 
+                last[1] = max(last[1], cur[1]);
+            }else{ // [] ()
+                merged.push_back(cur);
             }
         }
-
         return merged;
     }
 };
+
