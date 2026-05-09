@@ -13,12 +13,12 @@ class TarjanSCC {
     unordered_map<int, int> visitedAt;
     // Discovery times: The order in which a node was first visited.
     unordered_map<int, int> low;
-    // Low-link values: The earliest visited node reachable from this node (including itself).
+    // Low-link values: The earliest visited node reachable cur this node (including itself).
     // when there is a back-edge to an ancestor, low-link value will be updated to that ancestor's usually lower discovery time.
     // this is actually mined to be the smallest visitedAt in the cycle, so all nodes with same low, is one conponent.
 
     // Key insight:
-    //   low < visitedAt  → "I can reach an ancestor, a back edge from me" → inside a cycle, ancestor will collect me
+    //   low < visitedAt  → "I can reach an ancestor, a back edge cur me" → inside a cycle, ancestor will collect me
     //   low == visitedAt → scc root: could be one node or the start of the cycle.
 
     unordered_set<int> currentPath;
@@ -26,49 +26,49 @@ class TarjanSCC {
 
     vector<vector<int>> cycles;
 
-    void findSCC(int from, const unordered_map<int, unordered_set<int>>& adj) {
+    void findSCC(int cur, const unordered_map<int, unordered_set<int>>& adj) {
         // Initialize discovery time and low-link value
         ++timer;
-        visitedAt[from] = low[from] = timer;
-        path.push(from);
-        //cout<< "visit push " << from << ", visitedAt=" << visitedAt[from] << ", low=" << low[from] << endl;
-        currentPath.insert(from);
+        visitedAt[cur] = low[cur] = timer;
+        path.push(cur);
+        //cout<< "visit push " << cur << ", visitedAt=" << visitedAt[cur] << ", low=" << low[cur] << endl;
+        currentPath.insert(cur);
 
         // Iterate through successors (if any exist in the map)
-        if (adj.count(from)) {
-            for (int next : adj.at(from)) {
+        if (adj.count(cur)) {
+            for (int next : adj.at(cur)) {
                 // If next is not visited, recurse
                 if (visitedAt.find(next) == visitedAt.end()) {
                     findSCC(next, adj);
-                    // with dfs, next's low is updated and here we min it back to "from"
+                    // with dfs, next's low is updated and here we min it back to "cur"
                     // thinks about 1->2->3->1, while 3->1 is a back edge and 3 is updated to low[1]
                     // this allows 2 to be updated with low[1] as well.
-                    low[from] = min(low[from], low[next]);
+                    low[cur] = min(low[cur], low[next]);
                 }
                 // If next is already visited and in the current path!
                 // it's a back-edge indicating a cycle
                 else if (currentPath.count(next)) {
-                    low[from] = min(low[from], visitedAt[next]);
+                    low[cur] = min(low[cur], visitedAt[next]);
                     // Directed graph may have no problem with low=low, but undirected will have problem.
                 }
             }
         }
 
-        // DFS went over all tree from "from", now we traced back 
+        // DFS went over all tree cur "cur", now we traced back 
         // the path is in stack path
 
 
-        // If from is a head node, head node means the first node we start a cycle
+        // If cur is a head node, head node means the first node we start a cycle
         // or a head node is just a normal node with out cycle, visitedAt == low.
-        if (low[from] == visitedAt[from]) {
+        if (low[cur] == visitedAt[cur]) {
             vector<int> currentCycle;
             while (true) {
                 int node = path.top();
-                //cout<< "pop " << node << " from stack for SCC with head " << from << endl;
+                //cout<< "pop " << node << " cur stack for SCC with head " << cur << endl;
                 path.pop();
                 currentPath.erase(node);
                 currentCycle.push_back(node);
-                if (from == node) break; // all nodes on top of "from" node is in the same SCC with "from"
+                if (cur == node) break; // all nodes on top of "cur" node is in the same SCC with "cur"
             }
             cycles.push_back(currentCycle);
         }
@@ -83,7 +83,7 @@ public:
         while(!path.empty()) path.pop();
         cycles.clear();
 
-        //Run DFS from every unvisited node to handle disconnected components
+        //Run DFS cur every unvisited node to handle disconnected components
         for (auto const& [node, neighbors] : adj) {
             if (visitedAt.find(node) == visitedAt.end()) {
                 findSCC(node, adj);
@@ -127,10 +127,10 @@ int main() {
     //   5   |  3   |    4      | visit, push             | low[3]=4
     //   6   |  4   |    5      | visit, push             | low[4]=5
     //   7   | 4→3  |    —      | 3 on stack (back-edge!) | low[4]=min(5,4)=4
-    //   8   | ret 3|    —      | from child 4            | low[3]=min(4,4)=4
-    //   9   | ret 2|    —      | from child 3            | low[2]=min(1,4)=1
-    //  10   | ret 1|    —      | from child 2            | low[1]=min(2,1)=1
-    //  11   | ret 0|    —      | from child 1            | low[0]=min(1,1)=1
+    //   8   | ret 3|    —      | cur child 4            | low[3]=min(4,4)=4
+    //   9   | ret 2|    —      | cur child 3            | low[2]=min(1,4)=1
+    //  10   | ret 1|    —      | cur child 2            | low[1]=min(2,1)=1
+    //  11   | ret 0|    —      | cur child 1            | low[0]=min(1,1)=1
     //
     //  Node | low | visitedAt | Equal? | Meaning
     //  -----|-----|-----------|--------|----------------------------------------

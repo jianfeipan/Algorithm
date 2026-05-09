@@ -30,3 +30,30 @@ public:
         return res;
     }
 };
+
+class Solution_permutation_with_duplication {
+private:
+    void permute_from(int from, vector<int>& nums, vector<vector<int>>& res) {
+        if (from == nums.size()) {
+            res.push_back(nums); // fully swapped produce one result
+            return;
+        }
+
+        for (int i = from; i < nums.size(); ++i) {// all possibilities on from
+            if(i!=from && nums[i] == nums[from]) continue; // skip duplication
+            
+            swap(nums[from], nums[i]);// also do for from, which means no swap, take the current result.
+            permute_from(from + 1, nums, res);
+            swap(nums[from], nums[i]); // backtrack
+        }
+    }    
+public:
+    vector<vector<int>> permuteUnique(vector<int>& nums) {
+        vector<vector<int>> res;
+        sort(nums.begin(), nums.end());
+
+        permute_from(0, nums, res);
+
+        return res;
+    }
+};
