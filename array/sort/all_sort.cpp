@@ -46,7 +46,7 @@ public:
             int left = i - 1;
 
             while(left >= 0 && nums[left] > cur){
-                // move right j
+                // move to right
                 nums[left + 1] = nums[left];
                 --left;
             }
@@ -80,30 +80,19 @@ private:
 
         // merge
         vector<T> merged(r - l + 1);
-        int i = l; //[l, .. ,m]
-        int j = m + 1; // [ m+1,..,r]
-        int k = 0;
-        while(i <= m && j <= r){
-            if(nums[i] < nums[j]){
-                merged[k] = nums[i];
-                ++i;
-            } else {
-                merged[k] = nums[j];
-                ++j;
+        {
+            int i = l;     // [l, ...,m]
+            int j = m + 1; // [m+1,..,r]
+            int k = 0;
+            while(i <= m && j <= r){
+                if(nums[i] < nums[j]){ merged[k] = nums[i]; ++i; ++k; } 
+                else                 { merged[k] = nums[j]; ++j; ++k; }
             }
-            ++k;
+            while(i <= m){ merged[k] = nums[i]; ++i; ++k; }
+            while(j <= r){ merged[k] = nums[j]; ++j; ++k; }
         }
-        while(i <= m){
-            merged[k] = nums[i];
-            ++i; 
-            ++k;
-        }
-        while(j <= r){
-            merged[k] = nums[j];
-            ++j; 
-            ++k;
-        }
-        for(int p = l, q = 0; p <= r; ++p, ++q) nums[p] = merged[q];
+
+        copy(merged.begin(), merged.end(), nums.begin() + l);// copy back to nums
     }
 
 public:
@@ -120,11 +109,11 @@ private:
         auto i = left + 1;
         auto j = right;
         while(i < j){
-            while(i < j && nums[j] >= pivot) --j;
-            while(i < j && nums[i] <= pivot) ++i;
+            while(i < j && nums[j] >= pivot) --j; // from right skip the larger
+            while(i < j && nums[i] <= pivot) ++i; // from left skip the smaller
             if(i < j) swap(nums[i], nums[j]);
         }
-        swap(nums[left], nums[i]);
+        swap(nums[left], nums[i]);// i now is moved the last smaller than pivot
         return i;
     }
 
@@ -164,11 +153,11 @@ public:
         int n = static_cast<int>(nums.size());
         if (n < 2) return;
 
-        for (int i = n / 2 - 1; i >= 0; --i) heapify<T>(nums, n, i);
+        for (int i = n / 2 - 1; i >= 0; --i) heapify<T>(nums, n, i); // nlogn
 
         for (int i = n - 1; i > 0; --i) {
-            swap(nums[0], nums[i]); // i=n-1 is sorted
-            heapify<T>(nums, i, 0);
+            swap(nums[0], nums[i]); // put the largest element at the end: i=n-1 is sorted
+            heapify<T>(nums, i, 0); // logn
         }
     }
 };
@@ -192,12 +181,12 @@ public:
 
 class bucket_sort{
 public:
-    // nums (0, 1)
+    // nums in [0, 1)
     static void sort(vector<double>& nums){
-        constexpr size_t bucket_num = 10;
-        vector<vector<double>> buckets(bucket_num);
+        constexpr size_t bucket_size = 10;
+        vector<vector<double>> buckets(bucket_size);
         for(auto num : nums){
-            int bucket_index = num*bucket_num;
+            const int bucket_index = num*bucket_size;
             buckets[bucket_index].push_back(num);
         }
 
@@ -205,7 +194,7 @@ public:
         
         int i = 0;
         for(const auto& bucket : buckets){
-            for(auto num : bucket){
+            for(const auto& num : bucket){
                 nums[i] = num;
                 ++i;
             }
@@ -215,17 +204,13 @@ public:
 
 class radix_sort{
 private:
-    static int _get_digit(int num, int exp){
-        return (num/exp) %10;
-    }
-
     static void _count_sort_digit(vector<int>& nums, int exp){
         const auto n = nums.size();
+        
         vector<vector<int>> digit_to_index(10);
-        for(int i=0; i<n; ++i) {
-            auto d = _get_digit(nums[i], exp);
-            digit_to_index[d].push_back(i);
-        }
+        auto digit = [exp](int num){ return (num/exp) % 10; };
+        for(int i=0; i<n; ++i) digit_to_index[ digit(nums[i]) ].push_back(i);
+
         vector<int> sorted(n);
         int i=0;
         for(const auto index_inorder : digit_to_index){
@@ -270,10 +255,10 @@ int main() {
     test<select_sort, int>();
     test<insert_sort, int>();
     test<bubble_sort, int>();
-    test<quick_sort, int>();
-    test<merge_sort, int>();
-    test<heap_sort, int>();
-    test<count_sort, int>();
+    test<quick_sort,  int>();
+    test<merge_sort,  int>();
+    test<heap_sort,   int>();
+    test<count_sort,  int>();
     test<bucket_sort, double>({0.9, 0.7, 0.8, 0.4, 0.1, 0.3, 0.03});
-    test<radix_sort, int>({105, 356, 428, 348, 818});
+    test<radix_sort,  int>({105, 356, 428, 348, 818});
 }    
