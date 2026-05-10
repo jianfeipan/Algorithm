@@ -128,35 +128,106 @@ AsyncTask run_task(CoroThreadPool& pool, int task_id) {
     // --------------------------------
 
     // 2. 以下代码已经在 Worker 线程里了
-    {
+    {//task body    
         std::osyncstream(std::cout) 
             << "[Task   " << task_id << "] (" << std::this_thread::get_id() << "): "
             << " executed by Worker " << current_worker_id << "...\n";
-    }
+             // 模拟工作负载
+        std::this_thread::sleep_for(std::chrono::milliseconds(500)); 
 
-    // 模拟工作负载
-    std::this_thread::sleep_for(std::chrono::milliseconds(500)); 
-
-    // 3. 任务结束
-    {
+        // 3. 任务结束
         std::osyncstream(std::cout) 
             << "[Task   " << task_id << "] (" << std::this_thread::get_id() << "): "
             << " executed!\n";
     }
 }
 
+AsyncTask linear_dependency(CoroThreadPool& pool) {
+    // 1. 执行任务 A
+    co_await pool.schedule();
+    std::osyncstream(std::cout) << "[Step A] Done\n";
+
+    // 2. 执行任务 B (依赖 A)
+    // 注意：这里不需要手动 enqueue，协程会自动在 A 结束后恢复并继续
+    co_await pool.schedule(); 
+    std::osyncstream(std::cout) << "[Step B] Done (A is finished)\n";
+
+    // 3. 执行任务 C (依赖 B)
+    co_await pool.schedule();
+    std::osyncstream(std::cout) << "[Step C] Done\n";
+}
+
+
+
+// task with return value，can be waited by other waiter
+template<typename T>
+struct Task {
+    struct promise_type {
+        T result;
+        std::coroutine_handle<> waiter; // 谁在等我
+
+        Task get_return_object() { return {std::coroutine_handle<promise_type>::from_promise(*this)}; }
+        std::suspend_always initial_suspend() { return {}; } // 设为 always 方便受控启动
+        std::suspend_always final_suspend() noexcept {
+            if (waiter) waiter.resume(); // 任务结束，唤醒等待我的父协程
+            return {};
+        }
+        void return_value(T val) { result = val; } // 处理 co_return val
+        void unhandled_exception() { std::terminate(); }
+    };
+
+    std::coroutine_handle<promise_type> handle;
+
+    // 为了让别人能 co_await task
+    bool await_ready() { return handle.done(); }
+    void await_suspend(std::coroutine_handle<> w) { handle.promise().waiter = w; handle.resume(); }
+    T await_resume() { return handle.promise().result; }
+
+    ~Task() { if (handle) handle.destroy(); }
+};
+
+// 任务 A：返回 10
+Task<int> task_A(CoroThreadPool& pool) {
+    co_await pool.schedule(); // 切换到线程池
+    std::osyncstream(std::cout) << "[Worker] Task A calculating...\n";
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    co_return 10;
+}
+
+// 任务 B：返回 20
+Task<int> task_B(CoroThreadPool& pool) {
+    co_await pool.schedule(); // 切换到线程池
+    std::osyncstream(std::cout) << "[Worker] Task B calculating...\n";
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    co_return 20;
+}
+
+// 任务 C：依赖 A 和 B，计算总和
+AsyncTask task_C(CoroThreadPool& pool) {
+    // 启动 A 和 B
+    auto tA = task_A(pool);
+    auto tB = task_B(pool);
+
+    // 挂起并等待结果
+    // 这里会发生两次跳转：等 A 完了恢复，再等 B 完了恢复
+    int valA = co_await tA;
+    int valB = co_await tB;
+
+    std::osyncstream(std::cout) << "[Worker] Task C summing: " << valA << " + " << valB 
+                                << " = " << (valA + valB) << "\n";
+}
+
 int main() {
     CoroThreadPool pool(4);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500)); 
-
-
     run_task(pool, 1);
     run_task(pool, 2);
     run_task(pool, 3);
+    linear_dependency(pool);
+    task_C(pool); // 这个任务会启动 A 和 B 两个子任务，并等待它们完成
 
-    // 给异步任务一点执行时间
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::seconds(2));
     return 0;
 }
 
