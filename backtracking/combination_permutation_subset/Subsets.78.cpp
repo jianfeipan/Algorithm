@@ -24,6 +24,38 @@ public:
     }
 };
 
+
+
+class Solution_with_duplication_solution1{
+private:
+    void subsets(vector<int>& nums, 
+                int from, 
+                vector<int>& current, 
+                vector<vector<int>>& res){
+        if(from == nums.size())  { res.push_back(current); return; }
+
+        // take from
+        auto num = nums[from];
+        current.push_back(num);
+        subsets(nums, from+1, current, res);
+        current.pop_back();
+
+        auto next = from+1;
+        while(next<nums.size() && nums[next] == num) ++next;
+        // don't take from
+        subsets(nums, next, current, res);
+    }
+
+public:
+    vector<vector<int>> subsetsWithDup(vector<int>& nums) {
+        vector<vector<int>> res;
+        vector<int> current;
+        sort(nums.begin(), nums.end());
+        subsets(nums, 0, current, res);
+        return res;
+    }  
+};
+
 class Solution_with_duplications {
 
 private:
