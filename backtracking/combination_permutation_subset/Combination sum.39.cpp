@@ -14,6 +14,7 @@ private:
         
         // take current one
         current.push_back(num);
+        // every number can use many times: next we still use `from`
         combination_sum(nums, target - num, from, current, res);
         current.pop_back(); // backtrace
 

@@ -33,27 +33,24 @@ public:
 
 class Solution_permutation_with_duplication {
 private:
-    void permute_from(int from, vector<int>& nums, vector<vector<int>>& res) {
-        if (from == nums.size()) {
-            res.push_back(nums); // fully swapped produce one result
-            return;
-        }
+    void permutations_(int from, vector<int>& current, vector<vector<int>>& res){
+        if(from == current.size()) { res.push_back(current); return; }
 
-        for (int i = from; i < nums.size(); ++i) {// all possibilities on from
-            if(i!=from && nums[i] == nums[from]) continue; // skip duplication
-            
-            swap(nums[from], nums[i]);// also do for from, which means no swap, take the current result.
-            permute_from(from + 1, nums, res);
-            swap(nums[from], nums[i]); // backtrack
+        unordered_set<int> visited;
+        for(int i = from; i<current.size(); ++i){
+            if(visited.count(current[i])) continue;
+
+            visited.insert(current[i]);
+            swap(current[from], current[i]);
+            permutations_(from+1, current, res);
+            swap(current[from], current[i]);
         }
-    }    
+    }
+
 public:
     vector<vector<int>> permuteUnique(vector<int>& nums) {
         vector<vector<int>> res;
-        sort(nums.begin(), nums.end());
-
-        permute_from(0, nums, res);
-
+        permutations_(0, nums, res);
         return res;
     }
 };
