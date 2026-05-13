@@ -21,6 +21,15 @@ public:
     BufferAllocator(std::byte* buffer, std::size_t size)
         : buffer_(buffer), capacity_(size), offset_(0) {}
 
+    // no copy
+    BufferAllocator(const BufferAllocator&) = delete;
+    BufferAllocator& operator=(const BufferAllocator&) = delete;
+    
+    // move
+    BufferAllocator(BufferAllocator&&) noexcept = default;
+    BufferAllocator& operator=(BufferAllocator&&) noexcept = default;
+
+
     void* allocate(std::size_t size,
                    std::size_t alignment = alignof(std::max_align_t)) {
 
@@ -60,6 +69,12 @@ private:
 /* adapter to make it compatible for std usage */
 template <class T>
 class ArenaAllocator {
+private:
+    //a standard boilerplate requirement for custom allocators that need to work with STL containers
+    template <class>
+    friend class ArenaAllocator;
+
+    BufferAllocator* arena_;
 public:
     using value_type = T;
 
@@ -89,16 +104,11 @@ public:
     bool operator!=(const ArenaAllocator<U>& other) const noexcept {
         return !(*this == other);
     }
-
-private:
-    template <class>
-    friend class ArenaAllocator;
-
-    BufferAllocator* arena_;
 };
 
 
 #include <iostream>
+#include <memory>
 alignas(std::max_align_t)
 std::byte static_buffer[4096]; // 全局/静态区
 
@@ -107,32 +117,33 @@ int main() {
     {
         BufferAllocator arena(static_buffer, sizeof(static_buffer));
 
-        int* a = static_cast<int*>(arena.allocate(sizeof(int)));
-        *a = 42;   
-
         ArenaAllocator<int> alloc(arena);
-        std::vector<int, ArenaAllocator<int>> v(alloc);
 
+        int* ptr = alloc.allocate(1);
+        std::construct_at(ptr, 1);
+
+        std::vector<int, ArenaAllocator<int>> v(alloc);
         v.push_back(1);
     }
 
-
     {
+        // stack buffer
         alignas(std::max_align_t) std::byte stack_buffer[1024];
         //std::byte stack_buffer[1024];
 
         BufferAllocator arena(stack_buffer, sizeof(stack_buffer));
 
         ArenaAllocator<int> alloc(arena);
-        std::vector<int, ArenaAllocator<int>> v(alloc);
 
+        int* ptr = alloc.allocate(1);
+        std::construct_at(ptr, 1);
+
+        std::vector<int, ArenaAllocator<int>> v(alloc);
         v.push_back(1);
     }
 
     {
-        std::size_t size = 4096;
-
-        // heap buffer (RAII 管理)
+        // heap buffer
         /*
         为什么 heap 默认是对齐的？ 不需要 alignas(std::max_align_t)
 
@@ -141,14 +152,16 @@ int main() {
         ✔ 所有 new 分配的内存必须满足：
 
         “适合任何对象类型的对齐要求” */
-        std::unique_ptr<std::byte[]> heap_buffer =
-            std::make_unique<std::byte[]>(size);
-
+        size_t size = 4096;
+        std::unique_ptr<std::byte[]> heap_buffer = std::make_unique<std::byte[]>(size);
         BufferAllocator arena(heap_buffer.get(), size);
         
         ArenaAllocator<int> alloc(arena);
+
+        int* ptr = alloc.allocate(1);
+        std::construct_at(ptr, 1);
+
         std::vector<int, ArenaAllocator<int>> v(alloc);
-        
         v.push_back(1);
         // 不需要 delete[]，unique_ptr 自动释放
     }

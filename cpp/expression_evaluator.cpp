@@ -1,18 +1,12 @@
 #include <string>
-#include <string_view>
-#include <cassert>
-#include <stack>
-#include <iostream>
-#include <array>
-
-{// no hpc
-#include <string>
 #include <cassert>
 #include <memory>
 #include <stack>
 #include <stdexcept>
 #include <iostream>
 
+namespace no_hpc{
+// no hpc version 
 class Node{
 public:
     virtual ~Node() = default;
@@ -145,7 +139,17 @@ private:
         return result;
     }
 };
-} // no hpc 
+}
+
+#include <string>
+#include <string_view>
+#include <cassert>
+#include <vector>
+#include <iostream>
+#include <array>
+#include <string_view>
+
+namespace hpc{
 /*
 优化	     原版	                            HPC 版
 求值方式	  建 AST 树 + 虚函数递归	          stack<bool> 边解析边求值，零堆分配
@@ -159,69 +163,63 @@ class Expression {
 public:
     enum class Error { None, InvalidExpression, MismatchedParentheses };
 
-    // Factory: no exception, returns error code
-    static Error create(std::string_view input, Expression& out) {
-        Error err = Error::None;
-        bool result = false;
-        err = evaluate(input, result);
-        if (err == Error::None) {
-            out.m_result = result;
-            out.m_valid = true;
-        }
-        return err;
-    }
-
-    bool evaluate() const { return m_result; }
-    bool valid() const { return m_valid; }
-
     // Direct evaluate without storing — most efficient path
     static Error evaluate(std::string_view input, bool& result) {
-        std::stack<char, std::vector<char>> values;// vector<bool> should be avoid
-        std::stack<char, std::vector<char>> ops;
+        std::vector<char> values; values.reserve(input.size()); 
+        // 1. using vector + reserve to make better memory locality: stack is using deque by default and it's a linked arraies.
+        // 2. using char not bool because vector<bool> in cpp is actually bits! and read/writ values will need more operations of bit manipulations
+        std::vector<char> ops; ops.reserve(input.size());
 
         for (size_t i = 0; i < input.size(); ++i) {
             const char c = input[i];
-            if (c == 'T')      values.push(true);
-            else if (c == 'F') values.push(false);
+            // handle values
+            if (c == 'T')      values.push_back(true);
+            else if (c == 'F') values.push_back(false);
+            // handle operations
             else if (c == '!' || c == '&' || c == '|') {
-                while (!ops.empty() && precedence(ops.top()) >= precedence(c)) {
-                    const char op = ops.top(); ops.pop();
+                while (!ops.empty() && precedence(ops.back()) >= precedence(c)) {
+                    const char op = ops.back(); ops.pop_back();
                     if (!applyOperator(values, op))
                         return Error::InvalidExpression;
                 }
-                ops.push(c);
+                ops.push_back(c);
+            // handle parantheses 
             } else if (c == '(') {
-                ops.push(c);
+                ops.push_back(c);
             } else if (c == ')') {
-                while (!ops.empty() && ops.top() != '(') {
-                    const char op = ops.top(); ops.pop();
+                while (!ops.empty() && ops.back() != '(') {
+                    const char op = ops.back(); ops.pop_back();
                     if (!applyOperator(values, op))
                         return Error::InvalidExpression;
                 }
-                if (ops.empty() || ops.top() != '(')
+                if (ops.empty() || ops.back() != '(')
                     return Error::MismatchedParentheses;
-                ops.pop();
+                ops.pop_back();
             } else {
                 return Error::InvalidExpression;
             }
         }
 
         while (!ops.empty()) {
-            const char op = ops.top(); ops.pop();
-            if (op == '(') return Error::MismatchedParentheses;
-            if (!applyOperator(values, op))
+            const char op = ops.back(); ops.pop_back();
+            if (op == '(') {
+                return Error::MismatchedParentheses;
+            } 
+
+            if (!applyOperator(values, op)) {
                 return Error::InvalidExpression;
+            }
         }
 
-        if (values.size() != 1) return Error::InvalidExpression;
-        result = values.top();
+        if (values.size() != 1) {
+            return Error::InvalidExpression;
+        }
+
+        result = values.back();
         return Error::None;
     }
 
 private:
-    bool m_result = false;
-    bool m_valid = false;
-
     // Lookup table: O(1) precedence
     static constexpr int precedence(char op) {
         // '!' = 33, '&' = 38, '|' = 124
@@ -236,19 +234,23 @@ private:
     }
 
     // Returns false on error (instead of throwing)
-    static bool applyOperator(std::stack<bool, std::vector<bool>>& values, char op) {
+    static bool applyOperator(std::vector<char>& values, char op) {
         if (op == '!') {
             if (values.empty()) return false;
-            bool v = values.top(); values.pop();
-            values.push(!v);
+
+            bool v = values.back(); values.pop_back();
+            values.push_back(!v);
             return true;
         }
         if (values.size() < 2) return false;
-        bool right = values.top(); values.pop();
-        bool left  = values.top(); values.pop();
-        if (op == '&')      values.push(left && right);
-        else if (op == '|') values.push(left || right);
+
+        bool right = values.back(); values.pop_back();
+        bool left  = values.back(); values.pop_back();
+
+        if (op == '&')      values.push_back(left && right);
+        else if (op == '|') values.push_back(left || right);
         else return false;
+        
         return true;
     }
 };
@@ -261,8 +263,10 @@ const char* errorToString(Expression::Error err) {
     }
     return "Unknown";
 }
+}
 
 int main() {
+    using namespace hpc;
     // Test helper: no exception, no heap allocation in hot path
     auto test = [](std::string_view input, bool expected) {
         bool result = false;
@@ -326,12 +330,6 @@ int main() {
     testError("T^F", Expression::Error::InvalidExpression);
     testError("(T&F", Expression::Error::MismatchedParentheses);
     testError("T&F)", Expression::Error::MismatchedParentheses);
-
-    // Also test the factory create() path
-    Expression exp;
-    auto err = Expression::create("T&!F", exp);
-    assert(err == Expression::Error::None);
-    assert(exp.evaluate() == true);
 
     std::cout << "All tests passed.\n";
 }

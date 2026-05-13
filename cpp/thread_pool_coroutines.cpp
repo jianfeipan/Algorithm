@@ -21,23 +21,46 @@ void sync_print(Args&&... args) {
 
 inline thread_local int current_worker_id = -1;
 
+#include <future>
+#include <coroutine>
+
 template<typename T>
 struct AsyncTask {
+    // The promise_type is the "state machine controller." 
+    // The compiler looks for this specific name to manage the coroutine.
     struct promise_type {
+        // 1. Storage for the final result. We use std::promise so that 
+        // the coroutine can safely pass a value or exception to the AsyncTask.
         std::promise<T> result;
 
+        // 2. Factory method: Creates the AsyncTask object that is returned 
+        // to the caller immediately when the coroutine is first invoked.
         AsyncTask get_return_object() {
             return { result.get_future() };
         }
+
+        // 3. Determines if the coroutine should pause BEFORE executing any code.
+        // std::suspend_never means it starts running immediately.
         std::suspend_never initial_suspend() { return {}; }
+
+        // 4. Determines if the coroutine should pause AFTER the body finishes.
+        // std::suspend_never allows the coroutine state to be cleaned up automatically.
         std::suspend_never final_suspend() noexcept { return {}; }
 
+        // 5. Triggered by 'co_return'. It fulfills the promise with the result.
         void return_value(T value) { result.set_value(std::move(value)); }
+
+        // 6. Error handling: If an exception escapes the coroutine body, 
+        // this captures it so it can be rethrown when the user calls .get().
         void unhandled_exception() { result.set_exception(std::current_exception()); }
     };
 
+    // The handle to the result produced by the promise_type. 
+    // We use shared_future to allow multiple parts of the code to wait for the result.
     std::shared_future<T> future;
 
+    // 7. The consumer interface: Blocks the caller until the coroutine 
+    // completes and returns the value (or throws the captured exception).
     T get() { return future.get(); }
 };
 
