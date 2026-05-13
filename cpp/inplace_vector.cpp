@@ -12,7 +12,10 @@ private:
     struct Storage {
         alignas(alignof(T)) std::byte data[sizeof(T)];
     };
-    alignas(T) Storage _data[Capacity];
+    Storage _data[Capacity];
+    
+    alignas(T) std::byte storage_[Capacity * sizeof(T)];
+
     std::size_t _size = 0;
 
     T* data_ptr() { return reinterpret_cast<T*>(_data); }
