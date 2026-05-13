@@ -1,48 +1,51 @@
-namespace my{
+namespace my {
 
 template<typename T>
-class unique_ptr{
+class unique_ptr {
 private:
     T* data_;
 
 public:
-    unique_ptr(T* data) : data_(data){}
-    ~unique_ptr(){ delete data_; }
+    // Marked explicit to prevent accidental conversions
+    explicit unique_ptr(T* data = nullptr) : data_(data) {}
 
-    // no copy
-    unique_ptr(const unique_ptr& ) = delete;
+    ~unique_ptr() { delete data_; }
+
+    // No copy
+    unique_ptr(const unique_ptr&) = delete;
     unique_ptr& operator=(const unique_ptr&) = delete;
 
-    // move
-    unique_ptr(unique_ptr&& that){
-        data_ = that.data_;
+    // Move Constructor
+    unique_ptr(unique_ptr&& that) noexcept : data_(that.data_) {
         that.data_ = nullptr;
     }
 
-    unique_ptr& operator=(unique_ptr&& that){
-        if(this!=that){
+    // Move Assignment
+    unique_ptr& operator=(unique_ptr&& that) noexcept {
+        if (this != &that) { // Fix: compare addresses
             reset();
-            this->data_ = that->data_;
-            that->data_ = nullptr;
+            this->data_ = that.data_; // Fix: access member via dot
+            that.data_ = nullptr;
         }
+        return *this; // Fix: return reference
     }
 
-    // observer
+    // Observers & Operator Overloads
+    T* get() const { return data_; }
     T& operator*() const { return *data_; }
     T* operator->() const { return data_; }
-    T* get() const { return data_; }
+    explicit operator bool() const { return data_ != nullptr; }
 
-    // setter
-    T* release(){
-        auto* res = data_;
-        data_=nullptr;
+    T* release() {
+        T* res = data_;
+        data_ = nullptr;
         return res;
     }
 
-    void reset(){
-        if(data_){
+    void reset(T* p = nullptr) {
+        if (data_ != p) {
             delete data_;
-            data_ = nullptr;
+            data_ = p;
         }
     }
 };
