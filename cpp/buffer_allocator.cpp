@@ -33,31 +33,20 @@ public:
     void* allocate(std::size_t size,
                    std::size_t alignment = alignof(std::max_align_t)) {
 
-        std::size_t current = reinterpret_cast<std::size_t>(buffer_) + offset_;
+        void* ptr = buffer_ + offset_;
         std::size_t space = capacity_ - offset_;
 
-        void* ptr = reinterpret_cast<void*>(current);
-
         if (std::align(alignment, size, ptr, space)) {
-            std::size_t new_offset =
-                reinterpret_cast<std::size_t>(ptr) -
-                reinterpret_cast<std::size_t>(buffer_) + size;
-
-            if (new_offset > capacity_) {
-                throw std::bad_alloc();
-            }
-
-            offset_ = new_offset;
-            return ptr;
+            // ptr is now aligned, space has been decreased by the padding
+            void* result = ptr;
+            offset_ = (static_cast<std::byte*>(ptr) - buffer_) + size;
+            return result;
         }
 
         throw std::bad_alloc();
     }
 
     void reset() { offset_ = 0; }
-
-    std::size_t used() const { return offset_; }
-    std::size_t capacity() const { return capacity_; }
 
 private:
     std::byte* buffer_;
@@ -70,20 +59,13 @@ private:
 template <class T>
 class ArenaAllocator {
 private:
-    //a standard boilerplate requirement for custom allocators that need to work with STL containers
-    template <class>
-    friend class ArenaAllocator;
-
     BufferAllocator* arena_;
 public:
+    //a standard boilerplate requirement for custom allocators that need to work with STL containers
     using value_type = T;
 
     ArenaAllocator(BufferAllocator& arena) noexcept
         : arena_(&arena) {}
-
-    template <class U>
-    ArenaAllocator(const ArenaAllocator<U>& other) noexcept
-        : arena_(other.arena_) {}
 
     T* allocate(std::size_t n) {
         return static_cast<T*>(
@@ -93,16 +75,6 @@ public:
 
     void deallocate(T*, std::size_t) noexcept {
         // no-op (arena allocator)
-    }
-
-    template <class U>
-    bool operator==(const ArenaAllocator<U>& other) const noexcept {
-        return arena_ == other.arena_;
-    }
-
-    template <class U>
-    bool operator!=(const ArenaAllocator<U>& other) const noexcept {
-        return !(*this == other);
     }
 };
 
@@ -121,9 +93,12 @@ int main() {
 
         int* ptr = alloc.allocate(1);
         std::construct_at(ptr, 1);
+        std::cout << *ptr<< std::endl;
 
         std::vector<int, ArenaAllocator<int>> v(alloc);
         v.push_back(1);
+        std::cout << v[0]<< std::endl;
+
     }
 
     {
@@ -137,9 +112,12 @@ int main() {
 
         int* ptr = alloc.allocate(1);
         std::construct_at(ptr, 1);
+        std::cout << *ptr<< std::endl;
 
         std::vector<int, ArenaAllocator<int>> v(alloc);
         v.push_back(1);
+        std::cout << v[0]<< std::endl;
+
     }
 
     {
@@ -160,9 +138,13 @@ int main() {
 
         int* ptr = alloc.allocate(1);
         std::construct_at(ptr, 1);
+        std::cout << *ptr<< std::endl;
+
 
         std::vector<int, ArenaAllocator<int>> v(alloc);
         v.push_back(1);
+        std::cout << v[0]<< std::endl;
+
         // 不需要 delete[]，unique_ptr 自动释放
     }
 }
