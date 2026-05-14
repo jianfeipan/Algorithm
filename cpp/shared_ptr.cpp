@@ -1,15 +1,18 @@
+#include <atomic>
+#include <utility>
+
 namespace my {
 
 template<typename T>
 class shared_ptr {
 private:
     T* data_ = nullptr;
-    size_t* counter_ = nullptr; // In real life, use std::atomic<size_t>
+    std::atomic<size_t>* counter_ = nullptr; 
 
     void release() {
         if (counter_) {
-            (*counter_)--;
-            if (*counter_ == 0) {
+            // fetch_sub returns the value BEFORE decrement
+            if (counter_->fetch_sub(1, std::memory_order_acq_rel) == 1) {
                 delete data_;
                 delete counter_;
             }
@@ -19,14 +22,12 @@ private:
     }
 
 public:
-    // Constructor
     explicit shared_ptr(T* data = nullptr) : data_(data) {
         if (data_) {
-            counter_ = new size_t(1);
+            counter_ = new std::atomic<size_t>(1);
         }
     }
 
-    // Destructor
     ~shared_ptr() {
         release();
     }
@@ -34,20 +35,16 @@ public:
     // Copy Constructor
     shared_ptr(const shared_ptr& that) : data_(that.data_), counter_(that.counter_) {
         if (counter_) {
-            ++(*counter_);
+            counter_->fetch_add(1, std::memory_order_relaxed);
         }
     }
 
-    // Copy Assignment
+    // Copy Assignment (Using Copy-and-Swap idiom for safety)
     shared_ptr& operator=(const shared_ptr& that) {
         if (this != &that) {
-            release(); // Clean up current resource first!
-            data_ = that.data_;
-            counter_ = that.counter_;
-            if (counter_) {
-                ++(*counter_);
-            }
-        }
+            shared_ptr tmp(that); // Use copy constructor (increments counter)
+            swap(*this, tmp);     // Swap internals
+        }                         // tmp goes out of scope (decrements old counter)
         return *this;
     }
 
@@ -60,7 +57,7 @@ public:
     // Move Assignment
     shared_ptr& operator=(shared_ptr&& that) noexcept {
         if (this != &that) {
-            release(); // Clean up current resource first!
+            release();
             data_ = that.data_;
             counter_ = that.counter_;
             that.data_ = nullptr;
@@ -69,20 +66,16 @@ public:
         return *this;
     }
 
-    // Observers
+    // Hidden friend: not a member function: calling swap(this, that)
+    friend void swap(shared_ptr& a, shared_ptr& b) noexcept {
+        using std::swap;
+        swap(a.data_, b.data_);
+        swap(a.counter_, b.counter_);
+    }
+
     T& operator*() const { return *data_; }
     T* operator->() const { return data_; }
-    T* get() const { return data_; }
-    size_t use_count() const { return counter_ ? *counter_ : 0; }
-    explicit operator bool() const { return data_ != nullptr; }
-
-    void reset(T* data = nullptr) {
-        release();
-        if (data) {
-            data_ = data;
-            counter_ = new size_t(1);
-        }
-    }
+    size_t use_count() const { return counter_ ? counter_->load() : 0; }
 };
 
 } // namespace my
