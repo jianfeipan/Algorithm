@@ -12,23 +12,23 @@ public:
     // CRTP 不需要虚析构函数，因为我们不通过基类指针 delete 子类对象
     // 这里的接口不再是 virtual，而是普通的成员函数
     void onAccess(const K& key) {
-        asDerived().onAccessImpl(key);
+        impl().onAccessImpl(key);
     }
 
     void onInsert(const K& key) {
-        asDerived().onInsertImpl(key);
+        impl().onInsertImpl(key);
     }
 
     void onRemove(const K& key) {
-        asDerived().onRemoveImpl(key);
+        impl().onRemoveImpl(key);
     }
 
     K evict() {
-        return asDerived().evictImpl();
+        return impl().evictImpl();
     }
 
 private:
-    Derived& asDerived() {
+    Derived& impl() {
         return static_cast<Derived&>(*this);
     }
 };
@@ -40,37 +40,37 @@ private:
 //   - 每次访问将 key 移到头部，淘汰时从尾部取
 template <typename K>
 class LRUPolicy : public EvictionPolicy<K, LRUPolicy<K>> {
-    list<K> _order;                                        // 双向链表，维护访问顺序
-    unordered_map<K, typename list<K>::iterator> _map;     // key → 链表迭代器，O(1) 定位
+    list<K> most_recent_;                                        // 双向链表，维护访问顺序
+    unordered_map<K, typename list<K>::iterator> pos_;     // key → 链表迭代器，O(1) 定位
 
 public:
     void onAccess(const K& key) {
         // 将 key 移到链表头部（最近使用）
-        auto it = _map.find(key);
-        if (it != _map.end()) {
-            _order.splice(_order.begin(), _order, it->second);
+        auto it = pos_.find(key);
+        if (it != pos_.end()) {
+            most_recent_.splice(most_recent_.begin(), most_recent_, it->second);
         }
     }
 
     void onInsert(const K& key) {
         // 新元素插入链表头部
-        _order.push_front(key);
-        _map[key] = _order.begin();
+        most_recent_.push_front(key);
+        pos_[key] = most_recent_.begin();
     }
 
     void onRemove(const K& key) {
-        auto it = _map.find(key);
-        if (it != _map.end()) {
-            _order.erase(it->second);
-            _map.erase(it);
+        auto it = pos_.find(key);
+        if (it != pos_.end()) {
+            most_recent_.erase(it->second);
+            pos_.erase(it);
         }
     }
 
     K evict() {
         // 淘汰链表尾部（最久未使用）
-        K key = _order.back();
-        _order.pop_back();
-        _map.erase(key);
+        K key = most_recent_.back();
+        most_recent_.pop_back();
+        pos_.erase(key);
         return key;
     }
 };
@@ -78,72 +78,79 @@ public:
 // ======================== LFU 淘汰策略 ========================
 // 最不经常使用：淘汰访问频率最低的元素，频率相同时淘汰最早插入的（FIFO）
 // 实现：三个哈希表 + 按频率分组的双向链表
-//   - _freqMap[freq] = 该频率下所有 key 的链表（按插入顺序，尾部最早）
-//   - _keyFreq[key] = key 当前的频率
-//   - _keyIter[key] = key 在对应频率链表中的迭代器
-//   - _minFreq = 当前最小频率，淘汰时直接定位
+//   - by_freq_[freq] = 该频率下所有 key 的链表（按插入顺序，尾部最早）
+//   - freq_[key] = key 当前的频率
+//   - pos_[key] = key 在对应频率链表中的迭代器
+//   - min_freq_ = 当前最小频率，淘汰时直接定位
 template <typename K>
 class LFUPolicy : public EvictionPolicy<K, LFUPolicy<K>> {
-    unordered_map<int, list<K>> _freqMap;                  // 频率 → 该频率下的 key 链表
-    unordered_map<K, int> _keyFreq;                        // key → 当前频率
-    unordered_map<K, typename list<K>::iterator> _keyIter; // key → 在频率链表中的迭代器
-    int _minFreq = 0;                                      // 当前全局最小频率
-
-    // 将 key 的频率 +1，并从旧频率链表移到新频率链表
-    void incrementFreq(const K& key) {
-        int freq = _keyFreq[key];
-        // 从旧频率链表中移除
-        _freqMap[freq].erase(_keyIter[key]);
-        // 如果旧频率链表空了，清理并可能更新 _minFreq
-        if (_freqMap[freq].empty()) {
-            _freqMap.erase(freq);
-            if (_minFreq == freq) _minFreq = freq + 1;
-        }
-        // 插入新频率链表的头部
-        int newFreq = freq + 1;
-        _keyFreq[key] = newFreq;
-        _freqMap[newFreq].push_front(key);
-        _keyIter[key] = _freqMap[newFreq].begin();
-    }
+    unordered_map<size_t, list<K>> by_freq_;                  // 频率 → 该频率下的 key 链表
+    unordered_map<K, size_t> freq_;                        // key → 当前频率
+    unordered_map<K, typename list<K>::iterator> pos_; // key → 在频率链表中的迭代器
+    size_t min_freq_ = 0;                                      // 当前全局最小频率
 
 public:
     void onAccess(const K& key) {
-        if (_keyFreq.count(key)) {
-            incrementFreq(key);
+        // assert(freq_.count(key));
+
+        const auto freq = freq_[key];
+        // 从旧频率链表中移除
+        by_freq_[freq].erase(pos_[key]);
+        // 如果旧频率链表空了，清理并可能更新 min_freq_
+        if (by_freq_[freq].empty()) {
+            by_freq_.erase(freq);
+            if (min_freq_ == freq) min_freq_ = freq + 1;// it's obvious freq + 1 is there, the current one!
         }
+        // 插入新频率链表的头部
+        const auto newFreq = freq + 1;
+        freq_[key] = newFreq;
+        by_freq_[newFreq].push_front(key);
+        pos_[key] = by_freq_[newFreq].begin();
     }
 
     void onInsert(const K& key) {
         // 新元素频率为 1，插入频率 1 的链表头部
-        _keyFreq[key] = 1;
-        _freqMap[1].push_front(key);
-        _keyIter[key] = _freqMap[1].begin();
-        _minFreq = 1; // 新插入的元素频率一定是最小的
+        freq_[key] = 1;
+        by_freq_[1].push_front(key);
+        pos_[key] = by_freq_[1].begin();
+        min_freq_ = 1; // 新插入的元素频率一定是最小的
     }
 
     void onRemove(const K& key) {
-        if (!_keyFreq.count(key)) return;
-        int freq = _keyFreq[key];
-        _freqMap[freq].erase(_keyIter[key]);
-        if (_freqMap[freq].empty()) {
-            _freqMap.erase(freq);
-            // 如果删掉的恰好是 _minFreq 对应的最后一个，需要修正
-            // 但 onRemove 只在 evict 或外部删除时调用，evict 会自行处理
+        if (freq_.find(key) == freq_.end()) return;
+
+        const auto f = freq_[key];
+        by_freq_[f].erase(pos_[key]);
+        
+        if (by_freq_[f].empty()) {
+            by_freq_.erase(f);
+            // Only update min_freq_ if we have other elements left
+            // assert(!freq_.empty(), "no element failes the evition.");
+            if (min_freq_ == f && !freq_.empty()) {
+                // This is only needed if you manually remove items
+                // Usually not hit during standard eviction
+                while (!by_freq_.count(min_freq_) && min_freq_ < 1000000) { // Safety cap
+                    min_freq_++;
+                }
+            }
         }
-        _keyFreq.erase(key);
-        _keyIter.erase(key);
+        
+        freq_.erase(key);
+        pos_.erase(key);
+        if (freq_.empty()) min_freq_ = 0;
     }
 
     K evict() {
         // 淘汰最小频率链表的尾部（最早插入的）
-        auto& minList = _freqMap[_minFreq];
+        auto& minList = by_freq_[min_freq_];
         K key = minList.back();
         minList.pop_back();
         if (minList.empty()) {
-            _freqMap.erase(_minFreq);
+            by_freq_.erase(min_freq_);
+            while(!by_freq_.count(min_freq_)) ++min_freq_; // ???risk
         }
-        _keyFreq.erase(key);
-        _keyIter.erase(key);
+        freq_.erase(key);
+        pos_.erase(key);
         return key;
     }
 };
