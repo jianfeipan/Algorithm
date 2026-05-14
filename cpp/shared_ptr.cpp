@@ -48,6 +48,9 @@ public:
         return *this;
     }
 
+    // !!!copy can have exception, move is noexcept: 
+    // moving just swaps pointers, but copying might need to ask the OS for more memory.
+
     // Move Constructor
     shared_ptr(shared_ptr&& that) noexcept : data_(that.data_), counter_(that.counter_) {
         that.data_ = nullptr;
