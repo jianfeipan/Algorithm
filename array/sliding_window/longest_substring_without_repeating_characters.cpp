@@ -46,3 +46,28 @@ public:
         return maxLen;
     }
 };
+
+class Solution {
+public:
+    int lengthOfLongestSubstring(string s) {
+        // sub str: order, continue
+
+        unordered_map<char, int> window;
+
+        int l=0;
+        int r=0;
+        int max_len = 0;
+        while(r<s.size()){
+            const auto current = s[r];
+            if(window.count(current)){
+                l = max(l, window[current] + 1); // skip the duplication, and avoid the staled data: max(l, ), so we don't need to remove the elements out of windown when move l
+            }
+            window[current] = r;// update the new index if need to be remove
+            
+            max_len = max(max_len, r-l+1);
+            ++r;
+        }
+        return max_len;
+    }
+};
+

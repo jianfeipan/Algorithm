@@ -19,29 +19,38 @@
     -> minHeap: the top is smallest, size : number of lists log(k)
  
  */
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
 
 class Solution {
 public:
     ListNode* mergeKLists(vector<ListNode*>& lists) {
 
-        auto greater = [](const ListNode* left, const ListNode* right){
+        auto greater = [] (auto left, auto right) {
             return left->val > right->val;
         };
         priority_queue<ListNode*, vector<ListNode*>, decltype(greater)> minHeap(greater);
-
-        for(auto* head:lists) minHeap.push(head);
-
-        ListNode beforeFirst;
-        auto* current = &beforeFirst;
-        while(!minHeap.empty()){
-            auto* minNode = minHeap.top();minHeap.pop();
-            current->next = minNode;
+        for(auto head : lists) minHeap.push(head);
+        
+        ListNode before_first;
+        auto prev = &before_first;
+        while( !minHeap.empty() ) {
+            // pick the smallest
+            auto min_head = minHeap.top(); minHeap.pop();
+            if(min_head->next) minHeap.push(min_head->next);
             
-            if(minNode->next) minHeap.push(minNode->next);
-
-            current = current->next;
+            prev->next = min_head;
+            prev = prev->next;
         }
-
-        return beforeFirst.next;
+        return before_first.next;
     }
 };
+

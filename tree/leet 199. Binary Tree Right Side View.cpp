@@ -9,27 +9,23 @@
  *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
  * };
  */
+
 class Solution {
 public:
     vector<int> rightSideView(TreeNode* root) {
-        //idea is a BFS , with right child first and take the top int he queue for each level
-        vector<int> result;
-        if(!root) return result;
-        
-        queue<TreeNode*> q;
-        q.push(root);
-        while(!q.empty())
-        {
-            result.push_back(q.front()->val);
-            
-            const size_t currentLevelSize = q.size();
-            for(size_t i = 0; i < currentLevelSize; ++i)
-            {
-                auto * node = q.front();q.pop();
-                if(node->right) q.push(node->right);//right first , because we want to get the front 
-                if(node->left) q.push(node->left);
+        queue<TreeNode*> bfs;
+        if(root) bfs.push(root);
+        vector<int> right_side;
+        while( !bfs.empty() ) {
+            right_side.push_back(bfs.back()->val);
+            const auto size = bfs.size();
+            for(int i=0; i<size; ++i) {
+                auto cur = bfs.front();bfs.pop();
+                if( cur->left ) bfs.push(cur->left);
+                if( cur->right ) bfs.push(cur->right);
             }
         }
-        return result;
+        return right_side;
     }
 };
+

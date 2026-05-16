@@ -53,44 +53,48 @@ public:
     */
 
 
-    ListNode* addTwoNumbers(ListNode* l1, ListNode* l2) 
-    {
-        ListNode beforeFirst;
-        auto n1 = l1;
-        auto n2 = l2;
+    /**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+
+class Solution {
+public:
+    ListNode* addTwoNumbers(ListNode* l1, ListNode* l2) {
         int carry = 0;
-        auto prev = &beforeFirst;
-        while(n1 || n2)
-        {
-            int sum = carry;
-            if(n1)
-            {
-                sum+=n1->val;
-                n1 = n1->next;
-            }
-            if(n2){
-                sum+=n2->val;
-                n2 = n2->next;
-            } 
-
-            if(sum>=10) 
-            {
-                carry = 1;
-                sum-=10;
-            }
-            else 
-            {
-                carry = 0;
-            }
-            prev->next = new ListNode(sum);
+        ListNode before_first;
+        auto prev = &before_first;
+        auto cur1 = l1;
+        auto cur2 = l2;
+        while(cur1 && cur2) {
+            int sum = cur1->val + cur2->val + carry;
+            carry = sum/10;
+            prev->next = new ListNode(sum%10);
             prev = prev->next;
+            cur1 = cur1->next;
+            cur2 = cur2->next;
         }
 
-        if(carry)
-        {
-            prev->next = new ListNode(1);
+        auto rest = cur1 ? cur1 : cur2;
+        while( rest ) {
+            int sum = rest->val + carry;
+            carry = sum/10;
+            prev->next = new ListNode(sum%10);
+            prev = prev->next;
+            rest = rest->next;
         }
 
-        return beforeFirst.next;
+        if(carry){
+            prev->next = new ListNode(carry);
+        }
+
+        return before_first.next;
     }
 };
+

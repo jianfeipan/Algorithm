@@ -81,3 +81,33 @@ public:
         return time.size();
     }
 };
+
+class Solution {
+public:
+    int carFleet(int target, vector<int>& position, vector<int>& speed) {
+        double prev_car_time = -1.0;
+        const auto n = position.size();
+        vector<int> index(n);
+        for (int i = 0; i<n; ++i) index[i] = i;
+
+        // sort by position: largest go first 0 <= position[i] < target
+        sort(index.begin(), 
+             index.end(), 
+             [&position] (int left, int right) {
+                return position[left] > position[right]; 
+             }
+        );
+
+        int fleet = 0;
+        for( auto current_car  : index ) {
+            const double current_car_time = (target - position[current_car] ) / (double)speed[current_car];
+            if( current_car_time > prev_car_time ) {
+                // this car is a new fleet
+                prev_car_time = current_car_time;
+                ++fleet;
+            }
+            // else // current time is smaller, become one fleet
+        }
+        return fleet;
+    }
+};

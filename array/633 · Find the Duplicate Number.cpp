@@ -18,4 +18,26 @@ public:
 
 
 
-}//;633 · Find the Duplicate Number
+};//;633 · Find the Duplicate Number
+
+class Solution {
+    // 0 1 2 3 4 
+    // 1 2 3 4 4 
+    // cur: 
+    // 
+    // 
+public:
+    int findDuplicate(vector<int>& nums) {
+        int cur = 0;
+        int prev = -1;
+        do{
+            auto next = nums[cur];
+            nums[cur] = -1;
+            prev = cur;
+            cur = next;
+        }while(cur!=-1);
+        
+        return prev;
+    }
+};
+

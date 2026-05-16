@@ -72,16 +72,16 @@ public:
             // 1->2->3->4->5->6
             ++n;
             if(n == k){
+                n=0;
                 groupTail = current;
                 reverse(groupHead, groupTail);
 
                 reversedTail->next = groupTail;
                 reversedTail = groupHead;
                 
-                n=0;
                 groupHead = next;
             } 
-            // group head, group tail
+            // group head, group tailo
             // gh    gt       gh
             // 1<-2<-3 next = 4->5->6
             current = next;

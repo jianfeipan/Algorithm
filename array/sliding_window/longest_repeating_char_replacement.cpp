@@ -26,24 +26,28 @@ Constraints:
 class Solution {
 public:
     int characterReplacement(string s, int k) {
-        unordered_map<char, int> count;
-        int maxLen = 0;
-        int mostFrequent = 0;
-        int l=0;
-        int r=0;
-        while(r<s.size()){
-            ++count[s[r]];
-            mostFrequent = max(mostFrequent, count[s[r]]);
-            // missing letters is bigger, mostFrequent is the longest we find so far
-            // so keep it to be the global max,and we don't need to re do the max for current window.
-            while((r-l+1) - mostFrequent >  k){
-                --count[s[l]];
+        // chaneg k chars : means i can have a most presented char in my window, then other k what ever letters.
+
+        int l=0, r=0;
+        array<int, 26> window{};
+
+        int most_freq = 0;
+        int max_len = 0;
+        while( r<s.size() ) {
+            ++window[s[r] - 'A'];
+            most_freq = max(most_freq, window[s[r] - 'A']);
+
+            if(r - l + 1 - most_freq > k){
+                // move left to deshrink the the window: we are sur with one move the k conditionis good
+                --window[s[l] - 'A'];// no worries the max, it will be reset in next circle
                 ++l;
             }
-            maxLen = max(maxLen, r-l+1);
+            
+            max_len = max(max_len, r - l +1);
             ++r;
         }
-        
-        return maxLen;
+
+        return max_len;
     }
 };
+

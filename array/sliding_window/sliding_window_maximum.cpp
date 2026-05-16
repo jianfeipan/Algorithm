@@ -47,31 +47,32 @@ idea:
 class Solution {
 public:
     vector<int> maxSlidingWindow(vector<int>& nums, int k) {
-        //assert(nums.size() < k);
+        const auto n = nums.size();
+        if( n < k ) return {}; // invalide input
 
-        // if i have a bigger one, i don't care the smaller ones, 
-        // so i will have a deacreasing queue: every time I have a bigger one, i pop the smaller ones
-        // --> monoton stack
+        vector<int> max_in_window(n - k + 1, 0);
+       
+        using Index = int;
+        deque<Index> decreasing;
 
-        // however, we need to move element out of window from the front --> monoton deque
-        const auto& n =nums.size();
-        using Index =int;
-        using Value = int;
-        deque<pair<Index, Value>> window;// decreasing ex:  5 4 2 1
-
-        vector<int> res; res.reserve(n-k+1);
-        for(int r=0; r<n; ++r){
-            auto right = nums[r];
-            while(!window.empty() && window.back().second < right) window.pop_back();
-            window.emplace_back(r, right);
-            // 0  1  2  3=r       
-            // 1 [2  1  0] 4  2  6        
-            if(r>=k) if(window.front().first <=r-k) window.pop_front();
-            if(r>=k-1) res.push_back(window.front().second);
-        }    
-
-        return res;
-
+        for( int r = 0; r < n; ++r ) {
+            // monoton
+            while( !decreasing.empty() && nums[decreasing.back()] < nums[r] ) decreasing.pop_back();
+            decreasing.push_back(r);
+            
+            //left side expire: move out from window
+            if( decreasing.front() == r - k ) {
+                decreasing.pop_front();
+            }
+            // 0  1  2  3   r=2, k = 3,
+            //[1  2  1] 0  4  2  6
+            if(r - k + 1>= 0) {
+                //assert(!decreasing.empty()); // guaranteed by algo
+                max_in_window[r - k + 1] = nums[decreasing.front()];
+            }
+        }
+        return max_in_window;
     }
 };
+
 

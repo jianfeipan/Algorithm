@@ -39,28 +39,28 @@ bad : tree is not well balanced and impact the efficiety of search
  *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
  * };
  */
-class Solution {
-public:
-    int kthSmallest(TreeNode* root, int k) 
-    {
-        return inorderVisit(root, k)->val;    
-    }
-    
-private:
-    TreeNode * inorderVisit(TreeNode * root, int &k)
-    {
-        TreeNode * kth = nullptr;
-        if(root)
-        {
-            kth = inorderVisit(root->left, k);
 
-            if(k>0)
-            {
-                --k;
-                if(k==0) kth = root;
-                else kth = inorderVisit(root->right, k);
-            }
-        }
-        return kth;
+
+class Solution {
+    // inorder traversal
+private:
+    void visit(TreeNode* root, int& current, int k, int& res) {
+        if(!root) return;
+
+        visit(root->left, current, k, res);
+        
+        ++current;
+        if(current == k) { res = root->val; return; }
+       
+        visit(root->right, current, k, res);
+    }
+public:
+    int kthSmallest(TreeNode* root, int k) {
+        if(!root) return -1;
+        int current = 0;
+        int res;
+        visit(root, current, k, res);
+        return res;
     }
 };
+

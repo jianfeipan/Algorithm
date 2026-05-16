@@ -28,58 +28,50 @@ Constraints:
 
 */
 
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+
 class Codec {
-
-private:
-    void serialize(TreeNode* root, string& serialized) {
-        if(!root) serialized+="N ";
-        else {
-            serialized+=to_string(root->val)+" ";
-            serialize(root->left, serialized);
-            serialize(root->right, serialized);
-        }
-    }
-
-    TreeNode* deserialize(const vector<string> & tokens, int &pos){
-        if(pos>=tokens.size()) return nullptr;
-        if(tokens[pos]=="N") 
-        {
-            ++pos;
-            return nullptr;
-        }
-        TreeNode *node = new TreeNode(stoi(tokens[pos]));
-        ++pos;
-        node->left = deserialize(tokens, pos); 
-        node->right = deserialize(tokens, pos); 
-        
-        return node;
-    }
-
-    vector<string> split(const string& s) {
-        vector<string> result;
-        stringstream ss(s);
-        string word;
-        while (ss >> word) {
-            result.push_back(word);
-        }
-        return result;
-    }
-
 public:
 
     // Encodes a tree to a single string.
     string serialize(TreeNode* root) {
-        string serialized;
-        serialize(root, serialized);
-        return serialized;  
+        if(!root) return "N/";
         
+        stringstream ss;
+        ss<< to_string(root->val)<<"/";
+
+        ss<<serialize(root->left);
+        ss<<serialize(root->right);
+        return ss.str();
     }
 
+    TreeNode* deserialize(stringstream& ss) {
+        string current;
+        if(getline(ss, current, '/')){
+            if(current == "N") return nullptr;
+
+            auto root = new TreeNode(stoi(current)); 
+            root->left = deserialize(ss);
+            root->right = deserialize(ss);
+            return root;
+        }
+        return nullptr;
+
+    }
     // Decodes your encoded data to tree.
     TreeNode* deserialize(string data) {
-        auto tokens = split(data);
-        int pos = 0;
-        return deserialize(tokens, pos);
-
+        stringstream ss(data);
+        return deserialize(ss);
     }
 };
+
