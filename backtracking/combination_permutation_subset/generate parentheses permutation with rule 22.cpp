@@ -36,3 +36,39 @@ public:
         return res;
     }
 };
+
+
+class Solution {
+private:
+    void generate(int opens,
+                  int n, 
+                  string& current,
+                  vector<string>& res) {
+        if (current.size() == 2*n) {
+            res.push_back(current);
+            return;
+        }
+
+        // put a open
+        if(opens<n) { // when i have n open, no more open to put
+            current+='(';
+            generate(opens+1, n, current, res);
+            current.pop_back();// backtracing
+        }
+
+        // put a close
+        auto closes = current.size() - opens;
+        if(opens > closes) { // i can only put close when I have more open to close
+            current+=')';
+            generate(opens, n, current, res);
+            current.pop_back();// backtracing
+        } 
+    }
+public:
+    vector<string> generateParenthesis(int n) {
+        vector<string> res;
+        string current;
+        generate(0, n, current, res);
+        return res;
+    }
+};

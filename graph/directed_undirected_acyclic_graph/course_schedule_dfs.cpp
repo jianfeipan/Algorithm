@@ -1,43 +1,38 @@
+class Solution {
 
-class Solution {// dfs
 private:
-    bool dfs_has_circle(
-        int current, 
-        vector<int>& tested, //tested → memoization (“this subtree is safe”)
-        vector<int>& current_path, ////circle detection (“this node is in current path”)
-        const vector<vector<int>>& post_request){
-        
-        current_path[current] = 1;
-        for(auto next : post_request[current]){
-            if(current_path[next]) return true;
+    bool has_circle(int from, 
+                    const vector<unordered_set<int>>& prerequest,
+                    vector<char>& current_path,
+                    vector<char>& visited) {
+        if (visited[from]) return false;
+        if (current_path[from]) return true;// back edge!
 
-            if(!tested[next]){ // this node is test and no circle
-                if(dfs_has_circle(next, tested, current_path,post_request)) return true;
-            }
+        current_path[from] = true;
+        for (const auto& next : prerequest[from]) {
+            if(has_circle(next, prerequest, current_path, visited)) return true;
         }
-        current_path[current] = 0;
+        current_path[from] = false; // backtracing
 
-        tested[current] = 1;// tested: no circle
+        visited[from] = true;
         return false;
-    }
+    };    
 public:
     bool canFinish(int numCourses, vector<vector<int>>& prerequisites) {
-        vector<vector<int>> post_request(numCourses);
-        for(int i=0; i<prerequisites.size(); ++i){
-            auto postreq = prerequisites[i][0];
-            auto prereq = prerequisites[i][1];
+        vector<unordered_set<int>> prerequest(numCourses);
 
-            post_request[prereq].push_back(postreq);
-        } 
+        for (const auto& prereq : prerequisites) {
+            prerequest[prereq[0]].insert(prereq[1]);
+        }
+        // dfs cirle detection
+        vector<char> visited(numCourses, false); // vector<bool> is bit...slow
 
-        vector<int> tested(numCourses);
-        for(int i=0; i<numCourses; ++i){
-            if(!tested[i]){
-                vector<int> current_path(numCourses);
-                if(dfs_has_circle(i, tested, current_path, post_request)) return false;
+        for (int from = 0; from < numCourses; ++from) {
+            if(!visited[from]) {
+                vector<char> current_path(numCourses, false);
+                if(has_circle(from, prerequest, current_path, visited)) return false;
             }
-        } 
-
+        }
         return true;
     }
 };

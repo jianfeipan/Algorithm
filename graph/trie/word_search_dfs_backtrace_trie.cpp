@@ -8,78 +8,62 @@ private:
     }};
 
     struct Node{
-        array<Node*, 26> children{};
-        unique_ptr<string> word{};
-    };
+        array<unique_ptr<Node>, 26> children {};
+        string* word {nullptr};
+    };   
 
-    class Trie{
-    private:
+    void dfs(vector<vector<char>>& board,
+             int r, int c,
+             Node* root,
+             vector<string>& res) {
 
-        vector<Node> pool;// vector can be relocated to another address, the org pointers are dungling
+        const auto& n_row = board.size();
+        const auto& n_col = board[0].size();
 
-        Node* newNode(){
-            pool.emplace_back();
-            return &pool.back();
+        if (!root || r<0 || r>=n_row || c<0 || c>= n_col ) return;
+
+        if (board[r][c] == '.') return; // is visited
+
+        auto& next_node = root->children[board[r][c] - 'a'];
+        if (!next_node) return; // no such letter
+
+
+        if (next_node->word) {
+            res.push_back(*(next_node->word));
+            next_node->word = nullptr; // Prevent duplicates and dangling references
         }
-    public:
-        Node* root;
-        Trie() {
-            //pool.reserve(1024);
-            root = newNode();
+
+        auto backup = board[r][c];
+        board[r][c] = '.'; // visited
+        for (const auto& [dr, dc] : DIRECTIONS) {
+            dfs(board, r+dr, c+dc, next_node.get(), res);
         }
-
-        void add(const string& word){
-            auto cur = root;
-            for(auto c : word){
-                int index = c - 'a';
-                if(!cur->children[index]) cur->children[index] = newNode();
-                cur = cur->children[index];
-            }
-            cur->word = make_unique<string>(word);
-        }
-    };
-   
-    void search(int r, int c,
-                vector<vector<char>>& board, 
-                Node* root,
-                vector<string>& found){
-        if(!root) return;
-
-        const auto R = board.size();
-        const auto C = board[0].size();
-        if(r<0 || r>=R || c<0 || c>=C) return;
-
-        auto letter = board[r][c];
-        if(letter == '.') return;// visited
-
-        auto next = root->children[letter - 'a'];
-        if(!next) return;
-        
-        board[r][c] = '.'; 
-        {
-            if(next->word) { 
-                found.push_back(*(next->word));
-                next->word.reset(); // avoid duplications
-            }
-
-            for(const auto& [dr, dc] : DIRECTIONS){
-                search(r+dr, c+dc, board, next, found);
-            } 
-        }
-        board[r][c] = letter; // backtracing
+        board[r][c] = backup; // backtracing
     }
-
+    
 public:
     vector<string> findWords(vector<vector<char>>& board, vector<string>& words) {
-        Trie trie;
-        for(const auto& word : words) trie.add(word);
+        Node root;
+        // read words
+        for(auto& word : words) {
+            auto* current = &root;
+            for (auto& c : word) {
+                auto& next = current->children[c-'a'];
+                if (!next) next = make_unique<Node>();
+                current = next.get();
+            }
+            current->word = &word;
+        }
 
-        vector<string> found;
-        for(int r = 0; r < board.size(); ++r){
-            for(int c = 0; c < board[0].size(); ++c){
-                search(r, c, board, trie.root, found);
+        vector<string> res;
+        const auto& n_row = board.size();
+        const auto& n_col = board[0].size();
+        for(int r = 0; r < n_row; ++r) {
+            for(int c = 0; c < n_col; ++c) {
+                dfs(board, r, c, &root, res);
             }
         }
-        return found;
+
+        return res;
     }
 };

@@ -94,3 +94,65 @@ public:
     }
 };
 
+
+
+class Solution_BFS {
+private:
+// bfs from boundries color the O's to ., 
+// then scan all O->x, . to O
+    constexpr static array<array<int, 2>, 4> DIRECTIONS {{
+        { +1, 0},
+        { -1, 0},
+        { 0, +1},
+        { 0, -1}
+    }};
+
+public:
+    void solve(vector<vector<char>>& board) {
+        const auto R = board.size();
+        const auto C = board[0].size();
+        // multi shource bfs
+        queue<pair<int, int>> bfs;
+        // push the for boundries 'O's
+        auto valid = [&] (int r, int c) {
+            return 0<=r && r<R && 0<=c && c<C;
+        };
+
+        auto visit = [&] (int r, int c) {
+            if(board[r][c] == 'O') {
+                board[r][c] = '.';
+                bfs.push({r, c});
+            }
+        };
+
+        for (int r=0; r<R; ++r) {
+            visit(r, 0);
+            visit(r, C-1);
+        }
+        for (int c=0; c<C; ++c) {
+            visit(0, c);
+            visit(R-1, c);
+        }
+
+        while (!bfs.empty()) {
+            auto [r, c] = bfs.front(); bfs.pop();
+            for (const auto [dr, dc] : DIRECTIONS) {
+                const auto next_r = r+dr;
+                const auto next_c = c+dc;
+                if (valid(next_r, next_c)) {
+                    visit(next_r, next_c);
+                }
+            }
+        }
+
+        for (int r=0; r<R; ++r) {
+            for (int c=0; c<C; ++c) {
+                if(board[r][c] == 'O') {
+                    board[r][c] = 'X';
+                }else if(board[r][c] == '.') {
+                    board[r][c] = 'O';
+                }
+            }
+        }
+    }
+};

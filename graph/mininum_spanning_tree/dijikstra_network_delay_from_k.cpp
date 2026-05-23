@@ -1,43 +1,56 @@
-class Solution {// Dijikstra
+class Solution {
 public:
     int networkDelayTime(vector<vector<int>>& times, int n, int k) {
+        // adj[u] stores pairs of {weight, v}
+        using W = int;
+        using V = int;
+        using E = pair<W, V>;
+        vector<vector<E>> adj(n);
+        for (const auto& time : times) {
+            const auto u = time[0] - 1;
+            const auto v = time[1] - 1;
+            const auto w = time[2];
+            adj[u].push_back({w, v});
+        }
+        
+        k = k - 1; // Convert to 0-indexed
 
-        using Time = int;
-        using From = int;
-        using To = int;
-        using Edge = pair<Time, To>;
-        unordered_map<From, vector<Edge>> edges;
-        for(const auto& u_v_t : times) edges[u_v_t[0]].emplace_back(u_v_t[2], u_v_t[1]);
-
-        using TimeFromK = int;
-        using Path = pair<TimeFromK, To>;
-        priority_queue<Path, vector<Path>, greater<>> minHeap;
-
-
-        vector<int> min_k_to(n+1, INT_MAX);
-        vector<int> min_prev(n+1, 0);
-        // start from k
-        minHeap.push({0, k});
-        min_k_to[k] = 0; 
+        // Stores minimum distance from k to all other nodes
+        vector<int> min_from_k_to(n, INT_MAX);
+        vector<int> min_prev(n, -1); // if we want to know the path
+        
+        min_from_k_to[k] = 0;
         min_prev[k] = k;
-        
-        
-        while(!minHeap.empty()){
-            const auto [t, cur] = minHeap.top();minHeap.pop();
-            if(t > min_k_to[cur]) continue; // visited or not shortest
-            
-            for(auto [cur_to_next, next] : edges[cur]){
-                auto k_to_next = min_k_to[cur] + cur_to_next;
-                if(k_to_next < min_k_to[next]){
 
-                    min_k_to[next] = k_to_next;
-                    min_prev[next] = cur;
+        // Min-heap storing pairs of {total_distance, node}
+        priority_queue<E, vector<E>, greater<E>> min_heap_from_k; // take the nearst node to k
+        min_heap_from_k.push({0, k});
 
-                    minHeap.push({k_to_next, next}); // !! in the priority queue the time is the time from K!!
+        vector<char> visited(n, false);
+
+        while (!min_heap_from_k.empty()) {
+            auto [k_to_u, u] = min_heap_from_k.top(); min_heap_from_k.pop();
+
+            // the different pathes could be pushed into the heap multipal time, ignore them if it doesn't make the global distance shorter
+            if (k_to_u > min_from_k_to[u]) continue; 
+
+            // this edge makes u shorter to k, check u's neighbors
+            for (const auto& [u_to_v, v] : adj[u]) {
+
+                // This edge shorts the distance to v, let's take it.
+                auto k_to_v = min_from_k_to[u] + u_to_v;
+                if ( k_to_v < min_from_k_to[v]) {
+                    min_from_k_to[v] = k_to_v;
+                    min_prev[v] = u;
+                    min_heap_from_k.push({min_from_k_to[v], v}); // Push TOTAL distance, not  edge weight
                 }
             }
         }
-        int delay = *max_element(++min_k_to.begin(), min_k_to.end());
-        return delay == INT_MAX ? -1 : delay;
+
+        // Find the maximum time it takes to reach any node
+        int max_delay = *max_element(min_from_k_to.begin(), min_from_k_to.end());
+        
+        // If any node is unreachable, return -1
+        return max_delay == INT_MAX ? -1 : max_delay;
     }
 };

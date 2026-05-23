@@ -37,7 +37,7 @@ private:
             if(dfs(board, r+dr, c+dc, index+1, word)) return true;
         }
         board[r][c] = backup;
-        return false;
+        return false;   
     }
 public:
     bool exist(vector<vector<char>>& board, string word) {

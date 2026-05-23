@@ -44,22 +44,50 @@ private:
         {'w','x','y','z'} // 9
     };
 
-    void combination(int from, const string& digits, 
-                    string current,
-                    vector<string>& res){
-        if(from == digits.size()) { res.push_back(current); return;}
+    class Solution {
+    private:
+        inline static const vector<vector<char>> KEY_BOARD = {
+            {}, // 0
+            {}, // 1
 
-        const auto& digit = digits[from] - '0';
-        for(auto letter : KEY_BOARD[digit]){
-            combination(from+1, digits, current + letter, res);
+            {'a','b','c'},    // 2
+            {'d','e','f'},    // 3
+            {'g','h','i'},    // 4
+            {'j','k','l'},    // 5
+            {'m','n','o'},    // 6
+            {'p','q','r','s'},// 7
+            {'t','u','v'},    // 8
+            {'w','x','y','z'} // 9
+        };
+
+        void dfs(string_view digits, 
+                 size_t from, 
+                 string& current,
+                 vector<string>& res) {
+            // final state
+            if (from == digits.size()) {
+                res.push_back(current);
+                return;
+            }
+            
+            // all possible path
+            const auto digit = digits[from];
+            for (auto c : KEY_BOARD[digit - '0']) {
+                current += c;
+                dfs(digits, from+1, current, res);
+                current.pop_back(); // backtracing
+            }
         }
-    }
-public:
-    vector<string> letterCombinations(string digits) {
-        if(digits.empty()) return {};
-        vector<string> res;
-        combination(0, digits, "", res);
-        return res;
-    }
-};
+
+    public:
+        vector<string> letterCombinations(string digits) {
+            if(digits.empty()) return {};
+            
+            vector<string> res;
+            string current;
+            dfs(digits, 0, current, res);
+            return res;
+        }
+    };
+
 

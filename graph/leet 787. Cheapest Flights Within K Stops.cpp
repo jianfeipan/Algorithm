@@ -79,12 +79,12 @@ public:
 
             for(int i=0; i<level_size; ++i){
                 auto [cur, cost_so_far] = bfs.front(); bfs.pop();
-                min_price[cur] = min(min_price[cur], cost_so_far);
 
                 for(auto [next, price] : tickets[cur]){
-                    auto cost = cost_so_far + price;//!!! here we must stay with cost_so_far, because we limit steps, with this step, this is the best we can do
+                    auto cost = cost_so_far + price;// here we must stay with cost_so_far, because we limit steps, with this step, this is the best we can do
                     if(cost < min_price[next]){
                         min_price[next] = cost;
+                        // min_prev[next] = cur
                         bfs.push({next, cost});
                     }
                 }
@@ -96,3 +96,4 @@ public:
         return min_price[dst]==INT_MAX ? -1 : min_price[dst];
     }
 };
+

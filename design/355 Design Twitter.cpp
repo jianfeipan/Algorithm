@@ -1,69 +1,65 @@
 class Twitter {
-    using UserId = int;
-    using TweetId = int;
-    using Time = int;
 private:
-    int time;
-    unordered_map<UserId, vector<pair<TweetId, Time>>> tweets;
-    unordered_map<UserId, unordered_set<UserId>> following;
+    using User = int;
+    unordered_map<User, unordered_set<User>> followees_; 
+
+    using Time = size_t;
+    using Tid = int;
+    using Tweet = pair<Time, Tid>;
+    unordered_map<User, vector<Tweet>> tweets_;
+
+    Time t_;
 public:
-    Twitter():time(0) {
+    Twitter() : t_(0) {
         
     }
     
     void postTweet(int userId, int tweetId) {
-        tweets[userId].push_back({tweetId, time});
-        // Assuming there is no duplications
-        ++time;
+        tweets_[userId].push_back({t_, tweetId});
+        ++t_;
     }
     
     vector<int> getNewsFeed(int userId) {
-        const auto& userFeed = tweets[userId];
-        const auto& followees = following[userId];
-        //min heap, keep 10: most recent 10
-        auto greater = [](const pair<TweetId, Time>& l, const pair<TweetId, Time>& r){
-            return l.second>r.second;
-        };
-        priority_queue<pair<TweetId, Time>, vector<pair<TweetId, Time>>, decltype(greater)> minHeap(greater);
+        constexpr size_t feeds_num = 10;
 
-        auto keepTop = [&minHeap](const pair<TweetId, Time> & tweet){
-                if(minHeap.size()<10){
-                    minHeap.push(tweet);
+        priority_queue<Tweet, vector<Tweet>, greater<Tweet>> earlist;
+        auto push = [&] (const Tweet& tweet) {
+            if (earlist.size() < feeds_num) {
+                earlist.push(tweet);
+            } else {
+                if (tweet.first > earlist.top().first) {
+                    earlist.pop();
+                    earlist.push(tweet);
                 }
-                else{
-                    Time t = tweet.second;
-                    if(t > minHeap.top().second) {
-                        minHeap.pop();
-                        minHeap.push(tweet);
-                    }
-                }
+            }
         };
-        for(const auto& followee : followees){
-            const auto& followeeTweets = tweets[followee];
-            for(const auto& tweet : followeeTweets){
-                keepTop(tweet);
+
+        // push my tweets
+        for(const auto& tweet : tweets_[userId]) push(tweet);
+
+        // push my folowees' tweets
+        for (const auto& followee : followees_[userId]) {
+            for(const auto& tweet : tweets_[followee]) {
+                push(tweet);
             }
         }
-        for(const auto& tweet : userFeed){
-            keepTop(tweet);
-        }
 
-        vector<TweetId> feed;
-        while(!minHeap.empty()){
-            feed.push_back(minHeap.top().first);
-            minHeap.pop();
+        vector<int> feeds; feeds.reserve(feeds_num);
+        while (!earlist.empty()) {
+            feeds.push_back(earlist.top().second);
+            earlist.pop();
         }
-
-        return {feed.rbegin(), feed.rend()};
+        return { feeds.rbegin(), feeds.rend() };
     }
     
     void follow(int followerId, int followeeId) {
-        if(followerId!=followeeId)
-            following[followerId].insert(followeeId);
+        if(followerId == followeeId) return;
+        // update or insert
+        followees_[followerId].insert(followeeId);
     }
     
     void unfollow(int followerId, int followeeId) {
-        if(followerId!=followeeId)
-            following[followerId].erase(followeeId);
+        // if exist...
+        followees_[followerId].erase(followeeId);
     }
 };

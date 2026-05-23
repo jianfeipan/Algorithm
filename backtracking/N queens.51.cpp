@@ -27,7 +27,9 @@ Constraints:
 
 1 <= n <= 8
 
-*/class Solution {
+*/
+
+class Solution {
 private:
     bool safe(int r, int c, int n, const vector<string> & current){
         // we are placing from top-left to right bottom
@@ -49,13 +51,15 @@ private:
     void put_queen_on_row(int r, int n,
                             vector<string> & current, 
                             vector<vector<string>> & res){
+        // final state
         if(r == n) { res.push_back(current); return; }
-        
+
+        // all possible pathes    
         for(int c = 0; c < n; ++c){
             if(safe(r, c, n, current)){
                 current[r][c] = 'Q';
                 put_queen_on_row(r+1, n, current, res);
-                current[r][c] = '.';
+                current[r][c] = '.'; // backtracing
             }
         }
     }
@@ -68,3 +72,4 @@ public:
         return res;
     }
 };
+

@@ -21,7 +21,7 @@ public:
                 if(current == endWord) return steps; // found!
 
                 for(int i=0; i<current.size(); ++i){
-                    auto next = current;
+                    auto next = current; // need this copy for each char
                     for(char c='a'; c<='z'; ++c){// a -> z
                         next[i] = c;
                         if(!visited.count(next) && words.count(next)){

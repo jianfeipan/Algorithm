@@ -59,6 +59,14 @@ E is the number of edges in the graph.
 public:
     vector<int> findRedundantConnection(vector<vector<int>>& edges) {
         DUS dus(edges.size());
+
+        // build DUS: O(V)
+        // join: alpha(V) 
+        // join for all edges: O(E*alpha(V))
+        // total: 
+        //        O(E * alpha(V) + V)
+        //  alpha = inversed Arckemen function: grows slowly than first order: with flatten, it's ~=O(1)
+        
         for(const auto& edge : edges){
             if(!dus.tryUnionNodes(edge[0]-1, edge[1]-1)){
                 return edge;

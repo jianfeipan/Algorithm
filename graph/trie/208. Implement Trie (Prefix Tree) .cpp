@@ -30,52 +30,52 @@ word and prefix are made up of lowercase English letters.*/
 class PrefixTree {
 private:
     struct Node{
-        //unordered_map<char, unique_ptr<Node>> children;
-        array<Node*, 26> children{};
-        bool is_word; 
+        array<unique_ptr<Node>, 26> children; //  made up of lowercase English letters
+        bool is_word {false};
     };
 
-    Node* newNode(){
-        pool.emplace_back();
-        return &pool.back();
-    }
+    Node root;
 
-    Node* root;
-    vector<Node> pool; // memory pool!! 
 public:
     PrefixTree() {
-        constexpr static size_t CAPACITY = 1024;
-        pool.reserve(CAPACITY);
-        root = newNode();
+        
     }
     
     void insert(string word) {
-        Node* cur = root;
-        for(auto c : word) {
-            auto index = c-'a';
-            if(!cur->children[index]) cur->children[index] = newNode();
-            cur = cur->children[index];
+        Node* current = &root;
+        for (const auto& c : word) {
+            auto& next = current->children[c-'a'];
+            if ( next == nullptr) {
+                next = make_unique<Node>();
+            }
+            current = next.get();
         }
-        cur->is_word = true;
+        current->is_word = true;
     }
     
     bool search(string word) {
-        Node* cur = root;
-        for(auto c : word) {
-            auto index = c-'a';
-            if(!cur->children[index]) return false;
-            cur = cur->children[index];
+        Node* current = &root;
+        for (const auto& c : word) {
+            auto& next = current->children[c-'a'];
+            if ( next == nullptr) {
+                return false;
+            }
+            current = next.get();
         }
-        return cur->is_word;
+        return current->is_word;
     }
     
     bool startsWith(string prefix) {
-        Node* cur = root;
-        for(auto c : prefix) {
-            auto index = c-'a';
-            if(!cur->children[index]) return false;
-            cur = cur->children[index];
+        Node* current = &root;
+        for (const auto& c : prefix) {
+            auto& next = current->children[c-'a'];
+            if ( next == nullptr) {
+                return false;
+            }
+            current = next.get();
         }
         return true;
+
     }
 };
+
