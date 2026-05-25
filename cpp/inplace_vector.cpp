@@ -14,6 +14,7 @@ private:
     };
     Storage _data[Capacity];
     
+    // better
     alignas(T) std::byte storage_[Capacity * sizeof(T)];
 
     std::size_t _size = 0;
