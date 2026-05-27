@@ -49,6 +49,7 @@ public:
         auto it = pos_.find(key);
         if (it != pos_.end()) {
             most_recent_.splice(most_recent_.begin(), most_recent_, it->second);
+            // no need to update pos_: the splice touches the pointers to next andprev, the iterator itself wasn't touched.
         }
     }
 
@@ -162,50 +163,49 @@ template <typename K, typename V, class Policy>
 class Cache {
     size_t _capacity;                                         // 缓存最大容量
     unordered_map<K, V> _store;                            // 键值对存储
-    unique_ptr<Policy> _policy;                            // 淘汰策略（多态）
+    Policy _policy;                            // 淘汰策略（多态）
 
 public:
     // 构造函数：传入容量和淘汰策略（通过 unique_ptr 转移所有权）
     Cache(size_t capacity)
-        : _capacity(capacity) {
-        _policy = make_unique<Policy>();
+        : _capacity(capacity), _policy() {
     }
 
     // 查询 key 对应的值，不存在返回 nullopt
     optional<V> get(const K& key) {
         auto it = _store.find(key);
         if (it == _store.end()) return nullopt;
-        _policy->onAccess(key);  // 通知策略：key 被访问
+
+        _policy.onAccess(key);  // 通知策略：key 被访问
         return it->second;
     }
 
     // 插入或更新键值对
     void put(const K& key, const V& value) {
-        // 如果 key 已存在，更新值并通知访问
-        if (_store.count(key)) {
-            _store[key] = value;
-            _policy->onAccess(key);
-            return;
+        
+        auto [_, inserted] = _store.try_emplace(key, value);
+        if (inserted) {
+            _policy.onInsert(key);
+        }else {
+            _policy.onAccess(key);
         }
+
         // 如果缓存已满，先淘汰一个元素
-        if ((int)_store.size() >= _capacity) {
-            K evicted = _policy->evict();
+        if (_store.size() > _capacity) {
+            K evicted = _policy.evict();
             _store.erase(evicted);
         }
-        // 插入新元素
-        _store[key] = value;
-        _policy->onInsert(key);
     }
 
     // 手动删除 key
     bool remove(const K& key) {
         if (!_store.count(key)) return false;
-        _policy->onRemove(key);
+        _policy.onRemove(key);
         _store.erase(key);
         return true;
     }
 
-    int size() const { return (int)_store.size(); }
+    size_t size() const { return _store.size(); }
     int capacity() const { return _capacity; }
 };
 
