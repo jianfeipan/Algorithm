@@ -110,3 +110,64 @@ private:
         return curr_id;
     }
 };
+
+
+#pragma once
+#include <vector>
+#include <string_view>
+#include <cstdint>
+
+class FastEnglishTrie {
+public:
+    using NodeId = uint32_t;
+    static constexpr NodeId kNullId = 0;
+    static constexpr NodeId kRootId = 1;
+
+private:
+    struct Node {
+        // 核心优化：直接映射，无需查找。占用 26 * 4 = 104 字节
+        // 刚好接近一个半 CPU 缓存行（64字节），访问极快
+        NodeId children[26] = { kNullId }; 
+        bool is_terminal = false;
+    };
+
+    std::vector<Node> nodes_;
+
+    NodeId alloc_node() {
+        nodes_.emplace_back();
+        return static_cast<NodeId>(nodes_.size() - 1);
+    }
+
+    // 将 'a'-'z' 映射到 0-25
+    inline size_t char_idx(char c) const { return static_cast<size_t>(c - 'a'); }
+
+public:
+    FastEnglishTrie() {
+        nodes_.emplace_back(); // 0 号占位
+        alloc_node();          // 1 号根节点
+    }
+
+    void insert(std::string_view key) {
+        NodeId curr_id = kRootId;
+        for (char c : key) {
+            size_t idx = char_idx(c);
+            NodeId next_id = nodes_[curr_id].children[idx];
+            if (next_id == kNullId) {
+                next_id = alloc_node();
+                // 由于 vector 扩容可能导致引用失效，必须通过 curr_id 重新访问
+                nodes_[curr_id].children[idx] = next_id;
+            }
+            curr_id = next_id;
+        }
+        nodes_[curr_id].is_terminal = true;
+    }
+
+    bool search(std::string_view key) const {
+        NodeId curr_id = kRootId;
+        for (char c : key) {
+            curr_id = nodes_[curr_id].children[char_idx(c)];
+            if (curr_id == kNullId) return false;
+        }
+        return nodes_[curr_id].is_terminal;
+    }
+};
