@@ -1,3 +1,12 @@
 {
-    "C_Cpp.default.compilerPath": "/usr/bin/gcc-11"
+    "C_Cpp.default.compilerPath": "/usr/bin/gcc-11",
+
+    
+    // Disable C/C++ IntelliSense caching entirely
+    "C_Cpp.intelliSenseCacheSize": 0,
+    "C_Cpp.intelliSenseCachePath": "",
+
+    // Limit background memory and indexing
+    "C_Cpp.maxConcurrentThreads": 1,
+    "C_Cpp.workspaceParsingLimit": 1
 }
