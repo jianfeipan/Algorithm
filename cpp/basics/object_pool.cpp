@@ -6,15 +6,14 @@
 
 template<typename T>
 class object_pool {
-private:
-        union Node {
+    union Node {
         alignas(T) std::byte storage[sizeof(T)];
         size_t next_free;
     };
 
     std::vector<Node> buffer_;
-    size_t next_free_slot_ = 0;
-    size_t capacity_ = 0;
+    size_t next_free_slot_ { 0 };
+    size_t capacity_ { 0 };
 
     T* get_ptr_at(size_t index) noexcept {
         return reinterpret_cast<T*>(buffer_[index].storage);
@@ -57,14 +56,12 @@ public:
             throw std::bad_alloc();
         }
 
-        size_t allocated_index = next_free_slot_;
+        const size_t allocated_index = next_free_slot_;
         
         next_free_slot_ = buffer_[allocated_index].next_free;
 
         T* addr = get_ptr_at(allocated_index);
-        
         std::construct_at(addr, std::forward<Args>(args)...);
-        
         return addr;
     }
 
@@ -75,7 +72,7 @@ public:
         auto* raw_obj_ptr = reinterpret_cast<std::byte*>(obj);
         
         ptrdiff_t byte_offset = raw_obj_ptr - raw_buffer_start;
-        size_t index = byte_offset / sizeof(Node);
+        const size_t index = byte_offset / sizeof(Node);
 
         obj->~T();
 
@@ -84,6 +81,8 @@ public:
     }
 };  
 
+// ^ the destory is tricky: you need to know which index was that object
+// a better solution is to use a Deleter to hold the index and return a unique_ptr who binds the ptr and the Deleter.
 
 
 #include <cstddef>
@@ -93,7 +92,6 @@ public:
 
 template <typename T>
 class stable_object_pool {
-private:
     struct Node {
         alignas(T) std::byte storage[sizeof(T)];
         size_t next_free;
@@ -104,10 +102,15 @@ private:
     size_t next_free_slot_ = 0;
     size_t capacity_ = 0;
 
+    void release_slot(size_t index) noexcept {
+        buffer_[index].is_active = false;
+        buffer_[index].next_free = next_free_slot_;
+        next_free_slot_ = index;
+    }
+
 public:
     // Custom deleter that our unique_ptr will use-> helps to find which index to be release
     class Deleter {
-    private:
         stable_object_pool* pool_;
         size_t index_;
     public:
@@ -142,7 +145,7 @@ public:
             throw std::bad_alloc();
         }
 
-        size_t idx = next_free_slot_;
+        const size_t idx = next_free_slot_;
         Node& node = buffer_[idx];
         
         next_free_slot_ = node.next_free;
@@ -153,12 +156,5 @@ public:
 
         // Hand ownership to unique_ptr, embedded with the exact index!
         return pointer(obj_ptr, Deleter(this, idx));
-    }
-
-private:
-    void release_slot(size_t index) noexcept {
-        buffer_[index].is_active = false;
-        buffer_[index].next_free = next_free_slot_;
-        next_free_slot_ = index;
     }
 };
