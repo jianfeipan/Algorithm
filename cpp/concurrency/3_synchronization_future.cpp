@@ -28,14 +28,15 @@ y.wait(); // wait for the continuation to finish
 // C++ solutions
 
 // with std::async
-template<class F>
-auto then(future<long> x, F&& f) {
+template<class T, class F>
+auto then(future<T> x, F&& f) {
     return async(
         [fut = move(x), f = forward<F>(f)] mutable {
             return f(fut.get());
         }
     );
 }
+
 future<long> x = async([] { return fibonacci<long>(1000); });
 auto y = then(x, [](long v) { return v*2;});
 
@@ -89,9 +90,51 @@ auto done = when_all(move(x), move(y)).then([](auto f1, auto f2) {
 
 done.wait(); // wait it somewhere but before that, other things can be done.
 
-template<class T>
-tuple<T> when_all(T&& left, T&& right) {
-    return make_tuple(forward<T>(left), forward<T>(right);
+template<class T1, class T2>
+future<tuple<T1, T2>> 
+when_all(future<T1> t1, future<T2> t2){// sink, should call when_all(move(t))
+    struct state {
+        atomic<unsigned> remaining{2};
+        promise<tuple<T1, T2>> p;
+        tuple<T1, T2> val;
+        // handle exception
+        atomic<bool> has_exception{false};
+        exception_ptr first_ex;
+
+    };
+
+    auto s = make_shared<state>();
+    auto joined_fut = s->p.get_future();
+    
+
+
+    auto recieve = [s] (auto set_val) {// flexible input of set_val
+        return [s, set_val](auto f) mutable { // f could be T 1 or T2
+            try {
+                set_val(s->val, f.get()); // set to val
+            } catch(...) {
+                bool excepted = false;
+                if (s->has_exception.compare_exchange_strong(expected, true, memory_order_acq_rel)) {
+                    s->first_ex = current_exception();
+                }
+            }
+
+            if (s->remaining.fetch_sub(1, memory_order_acq_rel) == 1) { 
+                // we need acq_rel to make a memory barrier to make "set to val" visible by "move val to promise" 
+                
+                if (s->has_exception.load(memory_order_acquire)) {
+                    s->p.set_exception(s->first_ex);
+                } else {
+                    s->p.set_value(move(s->val)); // move val to promise
+                }
+            }
+        };
+    };
+
+    move(t1).then(recieve([](auto& tup, T1 v){ get<0>(tup) = move(v); }));
+    move(t2).then(recieve([](auto& tup, T2 v){ get<1>(tup) = move(v); }));
+    
+    return joined_fut;
 }
 
 
@@ -110,7 +153,7 @@ future<T> split(future<T>& f) {
     promise<T> p;
     f = p.get_future(); // replace the original future by a new one bind to the promise
 
-    temp.then(
+    return temp.then(   // split will return a future with the original.get() as value.
         [p_ = move(p)] (auto f_) {
             if(f_.has_exception()) {
                 auto ex = f_.get_exception_ptr();
@@ -119,11 +162,12 @@ future<T> split(future<T>& f) {
             }
 
             auto value = temp_.get();
-            p_.set_value(value); // splited future
-            return value; // current future
+            p_.set_value(value); // "duplicate" the value to the promise
+            return value;
         }
     )
 }
+
 
 
 

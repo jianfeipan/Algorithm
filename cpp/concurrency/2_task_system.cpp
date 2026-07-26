@@ -109,7 +109,7 @@ public:
     
     ~task_system_single_queue() {
         q_.stop();
-        for ( auto& worker : workers_) worker.join();
+        for ( auto& worker : workers_) { if ( worker.joinable()) worker.join(); }
     }
 
     task_system_single_queue(const task_system_single_queue&) = delete;
@@ -156,7 +156,7 @@ public:
     
     ~task_system_multi_queue() {
         for ( auto& q : qs_) q.stop();
-        for ( auto& worker : workers_) worker.join();
+        for ( auto& worker : workers_) { if ( worker.joinable()) worker.join(); }
     }
 
     task_system_multi_queue(const task_system_multi_queue&) = delete;
