@@ -3,6 +3,7 @@
 
 #include <atomic>
 
+#include <memory>
 
 // lock-based
 class registy_mutex{
@@ -28,15 +29,17 @@ template<typename T>
 class lock_free_stack {
     struct Node {
         T val;
-        Node* next{nullptr};
+        std::shared_ptr<Node> next;
     };
 
-    std::atomic<Node*> top_{nullptr};
+    // std::atomic<Node*> top_{nullptr}; // raw pointer has ABA problem
+    std::atomic<std::shared_ptr<Node>> top_{nullptr};
+
 public:
     bool top(T& val) {
         auto top = top_.load(std::memory_order_acquire);
         if (!top) return false;
-        val = top->val;
+        val = top->val;// top is shared_ptr, top->val won't be race condition use-after-delete
         return true;
     }
 
@@ -54,12 +57,12 @@ public:
         )) {
             if(!top) return false; // nothing to pop
         }
-        delete top;
         return true;
     }
 
-    void push(T val) {
-        auto* new_node = new Node{val, top_.load(std::memory_order_relaxed)};
+    void push(T&& val) {
+        auto new_node = std::make_shared<Node>{std::move(val), top_.load(std::memory_order_relaxed)};
+        
         while(!top_.compare_exchange_weak(
             new_node->next, // expect top_ is new_node->next
             new_node, // write new_node to top_
@@ -69,11 +72,9 @@ public:
     }
 };
 
-
 /*
 wait-free
 */ 
-
 class registy_mutex{
     std::mutex mtx_;
     std::atomic<size_t> count_{0};
