@@ -56,7 +56,7 @@ public:
         q_.pop_front();
     }
 
-    // stealing 
+    // stealing -> wait-free API
     bool try_push(Task&& task) {
         {
             unique_lock<mutex> lock(mtx_, try_to_lock);
@@ -200,7 +200,7 @@ in order to steal, we need the notification_queue to beable to try_push/try_pop
         while(true) {
             Task task;
             for (unsigned i = 0; i < capacity_; ++i) {
-                if(qs_[(index + i)%capacity_].try_pop(move(task))) break;
+                if(qs_[(index + i)%capacity_].try_pop(task)) break;
             }
             if(!task) qs_[index].pop(task); // fallback
             if(!task) return;
@@ -239,12 +239,7 @@ auto async(task_system_multi_queue_stealing& task_system, Function&& f, Args&&..
     using return_type = invoke_result_t<Function, Args...>;
 
     auto task = make_shared<packaged_task<return_type()>>(
-        [
-            f_ = forward<Function>(f),
-            args_ = make_tuple(forward<Args>(args)...)
-        ] -> return_type {
-            return apply(move(f_), move(args_));
-        }
+        std::bind_front(forward<Function>(f), forward<Args>(args)...);
     );
 
     auto future = task.get_future();
