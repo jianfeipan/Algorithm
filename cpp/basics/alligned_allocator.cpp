@@ -5,11 +5,8 @@
 #include <new>
 #include <vector>
 
-// 智能选择跨平台的底层对齐分配函数
 inline void* cross_platform_aligned_alloc(std::size_t alignment, std::size_t size) {
-#if defined(_MSC_VER) // Windows
-    return _aligned_malloc(size, alignment);
-#else // Linux / macOS 及其他 POSIX 系统
+
     // 确保 size 是 alignment 的整数倍
     std::size_t remainder = size % alignment;
     if (remainder != 0) {
@@ -19,15 +16,11 @@ inline void* cross_platform_aligned_alloc(std::size_t alignment, std::size_t siz
     // alignment：对齐字节数（必须是 2 的幂，且必须是目标平台支持的有效对齐值）。
     // size：要分配的内存大小（字节数）。【核心陷阱】它必须是 alignment 的整数倍！
     // 返回值：成功时返回指向分配内存的指针；失败时返回 nullptr。
-#endif
+
 }
 
 inline void cross_platform_aligned_free(void* ptr) {
-#if defined(_MSC_VER)
-    _aligned_free(ptr);
-#else
     std::free(ptr);
-#endif
 }
 
 // 泛型对齐分配器
